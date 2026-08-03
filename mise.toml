@@ -1,0 +1,20 @@
+# Tool versions for the recipe-spec website (portable across machines / CI via mise).
+# Matches the versions the project is developed and built with.
+[tools]
+node = "24.18.0"
+pnpm = "10.33.2"
+
+# Run the website locally.
+#   mise run doc
+# Starts the Astro dev server at http://localhost:4321/recipe-spec/
+[tasks.doc]
+description = "Serve the website locally (Astro dev server)"
+dir = "website"
+run = "pnpm install --prefer-offline && pnpm dev"
+
+# Build the static site into website/dist/ (same as the Pages workflow).
+#   mise run build
+[tasks.build]
+description = "Build the static website into website/dist/"
+dir = "website"
+run = "pnpm install --prefer-offline && pnpm build"
