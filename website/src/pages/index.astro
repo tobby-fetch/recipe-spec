@@ -5,7 +5,7 @@ const description =
   "The open specification for Recipes — declarative, signable, fully pinned descriptions of the OCI artifacts that make up a software delivery. The format that drives Tobby, open to every tool.";
 const repo = "https://github.com/tobby-fetch/recipe-spec";
 const tobbySite = "https://tobby-fetch.github.io/tobby-fetch/";
-const ships = ["Specification", "JSON Schemas", "Go SDK"];
+const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK (first tagged release)"];
 ---
 
 <!doctype html>
@@ -282,9 +282,9 @@ const ships = ["Specification", "JSON Schemas", "Go SDK"];
         — container images, Helm charts, AI models, files — to an exact OCI
         digest, so one signature attests the whole delivery. It is the format
         that drives <a href={tobbySite} rel="noopener">Tobby</a> across network
-        zones, and it is published here — specification, JSON Schemas, and Go
-        SDK — under Apache-2.0, so any tool can read, validate, and emit
-        Recipes.
+        zones, and it is published here — specification, JSON Schemas, and
+        examples, with a Go SDK landing at the first tagged release — under
+        Apache-2.0, so any tool can read, validate, and emit Recipes.
       </p>
 
       <ul class="ships">

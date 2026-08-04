@@ -10,8 +10,8 @@ pinnable description of a set of OCI artifacts that together make up a software
 delivery. Recipes are designed to be moved between network zones with different
 trust levels — from fully connected zones down to air-gapped zones — by transfer
 tools such as [Tobby](https://github.com/tobby-fetch/tobby-fetch), and to be consumed
-by any third-party tooling through the schemas and the Go SDK published in this
-repository.
+by any third-party tooling through the schemas published in this repository and
+the Go SDK that lands with the first tagged release.
 
 ---
 
@@ -190,7 +190,7 @@ spec: {}                                # REQUIRED — kind-specific content
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string | yes | Recipe name. MUST be a valid OCI repository path segment: lowercase alphanumerics with `.`, `_`, `-` separators (`^[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*$`), at most 63 characters. Becomes the last path segment of the cookbook repository ([§11.3](#113-naming-and-tags)). |
-| `version` | string | yes | Version of the **described application** (not of any single ingredient). MUST be valid [Semantic Versioning 2.0.0](https://semver.org). Becomes the OCI tag on publication. |
+| `version` | string | yes | Version of the **described application** (not of any single ingredient). MUST be valid [Semantic Versioning 2.0.0](https://semver.org) **without build metadata** — `+` is not a legal OCI tag character ([§11.3](#113-naming-and-tags)). Becomes the OCI tag on publication. |
 | `description` | string | no | Human-readable, one-paragraph description. |
 | `labels` | map[string]string | no | Identifying key/value pairs intended for selection and filtering. Keys and values follow Kubernetes label syntax (values ≤ 63 characters). |
 | `annotations` | map[string]string | no | Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys SHOULD be namespaced with a DNS prefix (e.g. `recipe.tobby.dev/…`). |
@@ -622,6 +622,8 @@ Example: `registry.example.com/cookbook/wordpress:6.8.2`.
 - The repository’s last path segment MUST equal the recipe’s
   `metadata.name`, and the tag MUST equal its `metadata.version`. A recipe
   artifact whose content disagrees with its location MUST be rejected.
+  (This is why `metadata.version` excludes semver build metadata, [§6.1](#61-metadata):
+  a version containing `+` would have no publishable tag.)
 - Tags are immutable ([§8](#8-draft-and-cooked-recipes)): re-pointing an
   existing `(name, version)` tag is a policy violation; registries SHOULD be
   configured to enforce tag immutability where supported.
@@ -767,8 +769,10 @@ Kubernetes Secret format
 ```
 
 Lookup rule: when accessing an ingredient at `ref`, the consumer selects the
-`auths` entry whose key equals the reference’s `host[:port]`; absent an
-entry, access is anonymous. Consumers supply credential files through their
+`auths` entry whose key equals the `host[:port]` **actually contacted** — for
+a consumer that substitutes the source endpoint (cascaded zones, local
+mirrors), that is the substituted host, not the nominal host recorded in the
+recipe; absent an entry, access is anonymous. Consumers supply credential files through their
 own configuration (file path, environment, or mounted Kubernetes Secret).
 
 Rationale for reusing this format unchanged:
@@ -875,7 +879,8 @@ rejected per [§4.3](#43-strict-validation)) are published in
 
 The schemas validate structure and syntax. The following rules of this
 specification are **not** expressible in JSON Schema and MUST be enforced by
-tooling (the Go SDK in this repository implements all of them):
+tooling (the Go SDK shipping with the first tagged release implements all of
+them):
 
 - ingredient `name` uniqueness within a recipe ([§6.2](#62-specingredients));
 - the cooked profile: digest present on every ingredient and exact-tag

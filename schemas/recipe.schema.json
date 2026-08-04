@@ -29,9 +29,9 @@
           "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
         },
         "version": {
-          "description": "Version of the described application (Semantic Versioning 2.0.0). Becomes the OCI tag on publication.",
+          "description": "Version of the described application (Semantic Versioning 2.0.0, without build metadata: '+' is not a legal OCI tag character). Becomes the OCI tag on publication.",
           "type": "string",
-          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-((0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-((0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$"
         },
         "description": {
           "description": "Human-readable, one-paragraph description of the recipe.",

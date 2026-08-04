@@ -51,6 +51,6 @@ Landing page: **https://tobby-fetch.github.io/recipe-spec/**
 
 ## License
 
-The specification, JSON Schemas, and Go SDK are licensed under the
+The specification, JSON Schemas, examples, and Go SDK are licensed under the
 [Apache License 2.0](LICENSE). The Tobby application is published separately
 under the GPL-3.0 license.
