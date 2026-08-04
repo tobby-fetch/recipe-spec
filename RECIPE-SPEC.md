@@ -9,7 +9,7 @@ This document specifies the **Recipe** format: a declarative, signable, fully
 pinnable description of a set of OCI artifacts that together make up a software
 delivery. Recipes are designed to be moved between network zones with different
 trust levels — from fully connected zones down to air-gapped zones — by transfer
-tools such as [Tobby](https://github.com/tobby-fetch/tobby), and to be consumed
+tools such as [Tobby](https://github.com/tobby-fetch/tobby-fetch), and to be consumed
 by any third-party tooling through the schemas and the Go SDK published in this
 repository.
 
