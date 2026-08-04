@@ -1,0 +1,39 @@
+# Example: a COOKED recipe carrying a FileSet.
+#
+# A FileSet packages arbitrary files (configuration, scripts, certificates,
+# offline documentation, datasets...) as a standard OCI image, which gives
+# two consumption modes:
+#
+#   1. mounted read-only in Kubernetes via image volumes
+#      (volumes[].image, referenced by the pinned digest), or
+#   2. extracted to disk: layers applied in manifest order with OCI whiteout
+#      handling, then the paths selected by `extract.paths` are materialized.
+#
+# `extract` is only a hint for consumers: the image itself is always
+# transferred bit-exact and in full.
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: site-config
+  version: 2.3.1
+  description: >-
+    Site-local configuration bundle: trust anchors, host provisioning
+    scripts, and offline operator documentation for the zone.
+  labels:
+    recipe.tobby.dev/tier: config
+  annotations:
+    recipe.tobby.dev/cooked-at: "2026-07-10T09:05:00Z"
+spec:
+  ingredients:
+    - name: site-config
+      kind: FileSet
+      ref: registry.example.com/filesets/site-config
+      version: 2.3.1
+      digest: sha256:4c679da467e9bfa631ae93135c215bdb46205a90364acf4e5510ba39f4fa0965
+      # Only these subtrees are materialized on extraction; paths are
+      # relative to the image root (no leading '/', no '..').
+      extract:
+        paths:
+          - "etc/pki/trust-anchors/**"
+          - "opt/scripts/**"
+          - "usr/share/doc/site/**"

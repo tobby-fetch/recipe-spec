@@ -1,0 +1,56 @@
+# Example: a COOKED recipe as published to a cookbook.
+#
+# Every ingredient uses an exact version and is pinned by digest: fetching
+# these ingredients yields bit-identical content in any zone, or fails
+# verifiably. Published as an OCI artifact at, for instance:
+#
+#   registry.example.com/cookbook/wordpress:6.8.2
+#
+# (repository last segment = metadata.name, tag = metadata.version),
+# with a cosign signature attached under the sha256-<digest>.sig tag.
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: wordpress
+  version: 6.8.2 # version of the described application
+  description: >-
+    WordPress publishing platform with its MariaDB database, deployed with
+    the Bitnami Helm chart.
+  labels:
+    app.kubernetes.io/name: wordpress
+    recipe.tobby.dev/tier: web
+  annotations:
+    recipe.tobby.dev/cooked-at: "2026-07-09T14:32:00Z"
+    org.opencontainers.image.source: https://github.com/bitnami/charts
+spec:
+  ingredients:
+    # The Helm chart, transferred bit-for-bit (no dependency vendoring):
+    # the upstream chart signature and provenance remain verifiable.
+    - name: wordpress-chart
+      kind: HelmChart
+      ref: registry-1.docker.io/bitnamicharts/wordpress
+      version: 24.2.8
+      digest: sha256:fbe62c6b0a4b37e55b5231269c4a0aab9f30bbf69fe454c148988d2b654f46d3
+      vendorDependencies: false
+
+    # Container images referenced by the chart values. A chart never implies
+    # its images: they are listed explicitly so the transfer stays fully
+    # reviewable. Both are multi-platform; the digest pins the image INDEX,
+    # and only the listed platforms are required at the destination.
+    - name: wordpress
+      kind: ContainerImage
+      ref: docker.io/bitnami/wordpress
+      version: 6.8.2-debian-12-r3
+      digest: sha256:8acca98ed81b53b482870d6b2081e60d2aa77293895c90c97d2b0e76f469ffb1
+      platforms:
+        - linux/amd64
+        - linux/arm64
+
+    - name: mariadb
+      kind: ContainerImage
+      ref: docker.io/bitnami/mariadb
+      version: 11.4.7-debian-12-r0
+      digest: sha256:30442ceb6e26d1d27216a8d75820636c3cbed010482ea2a81f82d097872ee627
+      platforms:
+        - linux/amd64
+        - linux/arm64

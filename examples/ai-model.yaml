@@ -1,0 +1,43 @@
+# Example: a DRAFT recipe for an AI inference stack.
+#
+# This recipe is still in the authoring workspace (git, review), so it mixes:
+#   - a fully pinned ingredient (the model: exact version + digest), and
+#   - a constraint-based ingredient (the inference server: "3.1.x", no digest).
+#
+# Before publication to a cookbook, the cooking process must resolve the
+# constraint to an exact tag and record every missing digest — a cookbook
+# only accepts cooked (fully pinned) recipes.
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: sentiment-analyzer
+  version: 1.4.2 # version of the described application
+  description: >-
+    Sentiment analysis service: quantized language model weights served by a
+    GPU inference server.
+  labels:
+    recipe.tobby.dev/tier: ml
+  annotations:
+    org.opencontainers.image.documentation: https://docs.example.com/sentiment-analyzer
+spec:
+  ingredients:
+    # Model weights pushed as a generic OCI artifact (e.g. with `oras push`).
+    # artifactType is verified at fetch time: a manifest with a different
+    # artifact type under this tag fails the ingredient (guards against
+    # tag reuse and repository confusion).
+    - name: sentiment-model
+      kind: OCIArtifact
+      ref: registry.example.com/models/sentiment-analyzer
+      version: 1.4.2
+      digest: sha256:fb9ff3ee975e25f95b21f6e9605f32c9658ede17089f61000dd540ece55e8761
+      artifactType: application/vnd.example.mlmodel.v1+gguf
+
+    # Inference server image, not pinned yet: any 3.1.x release is
+    # acceptable at cook time; the highest matching tag will be selected
+    # and pinned by digest.
+    - name: inference-server
+      kind: ContainerImage
+      ref: registry.example.com/runtime/inference-server
+      version: 3.1.x
+      platforms:
+        - linux/amd64

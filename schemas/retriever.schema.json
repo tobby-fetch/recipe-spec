@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tobby.dev/schemas/v1alpha1/retriever.schema.json",
+  "title": "Retriever",
+  "description": "The desired recipe set for one network zone: which recipes, at which versions (exact or constraint), from which cookbook. Consumed by transfer tools in passthrough mode (periodic re-resolution) or mirror mode (per-synchronization resolution). See RECIPE-SPEC.md for normative semantics.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobby.dev/v1alpha1'.",
+      "const": "recipe.tobby.dev/v1alpha1"
+    },
+    "kind": {
+      "description": "Document kind. Always 'Retriever' for this schema.",
+      "const": "Retriever"
+    },
+    "metadata": {
+      "description": "Identity and metadata of the retriever. There is no 'version' field: a retriever is living configuration tracked in version control, not a published versioned artifact.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "Retriever name; conventionally the name of the zone it describes (lowercase alphanumerics with '.', '_', '-' separators).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
+        },
+        "description": {
+          "description": "Human-readable description of the zone and its purpose.",
+          "type": "string"
+        },
+        "labels": {
+          "description": "Identifying key/value pairs intended for selection and filtering (Kubernetes label syntax; values at most 63 characters).",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?/)?[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$",
+            "maxLength": 317
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 63
+          }
+        },
+        "annotations": {
+          "description": "Non-identifying metadata. Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "spec": {
+      "description": "Desired state of the zone.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cookbook", "recipes"],
+      "properties": {
+        "cookbook": {
+          "description": "Default cookbook to resolve recipes from: '<registry-host>[:<port>]/<repository-path>'. No scheme, no credentials; the hostname is the key for out-of-band credential lookup (kubernetes.io/dockerconfigjson format).",
+          "type": "string",
+          "pattern": "^(localhost(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)+(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*:[0-9]{1,5})(/[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*)+$"
+        },
+        "recipes": {
+          "description": "Recipes desired in this zone. Each entry resolves independently against its cookbook's tags; the recipe artifact and all its ingredients are transferred.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/recipeSelector"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "recipeSelector": {
+      "description": "Selection of one recipe (by name) at an exact version or the highest version matching a constraint.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "description": "Recipe name as published in the cookbook (matches the recipe's metadata.name and the repository's last path segment).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
+        },
+        "version": {
+          "description": "Exact recipe version, or version constraint expression (wildcards '16.x', caret '^1.4.0', tilde '~1.4.2', comparisons '>=2.0.0', conjunctions '>=2.0.0 <3.0.0'), resolved against the cookbook's tags for that recipe.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "cookbook": {
+          "description": "Optional per-entry override of spec.cookbook, with the same syntax rules.",
+          "type": "string",
+          "pattern": "^(localhost(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)+(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*:[0-9]{1,5})(/[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*)+$"
+        }
+      }
+    }
+  }
+}

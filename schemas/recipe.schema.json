@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tobby.dev/schemas/v1alpha1/recipe.schema.json",
+  "title": "Recipe",
+  "description": "A declarative, signable, fully pinnable description of a set of OCI artifacts (ingredients) that together make up a software delivery. See RECIPE-SPEC.md for normative semantics. Rules not expressible in JSON Schema (ingredient name uniqueness, cooked profile, publication-location consistency) are enforced by tooling.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobby.dev/v1alpha1'.",
+      "const": "recipe.tobby.dev/v1alpha1"
+    },
+    "kind": {
+      "description": "Document kind. Always 'Recipe' for this schema.",
+      "const": "Recipe"
+    },
+    "metadata": {
+      "description": "Identity and metadata of the recipe.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "description": "Recipe name. Must be a valid OCI repository path segment (lowercase alphanumerics with '.', '_', '-' separators). Becomes the last path segment of the cookbook repository on publication.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
+        },
+        "version": {
+          "description": "Version of the described application (Semantic Versioning 2.0.0). Becomes the OCI tag on publication.",
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-((0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "description": {
+          "description": "Human-readable, one-paragraph description of the recipe.",
+          "type": "string"
+        },
+        "labels": {
+          "description": "Identifying key/value pairs intended for selection and filtering (Kubernetes label syntax; values at most 63 characters).",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?/)?[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$",
+            "maxLength": 317
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 63
+          }
+        },
+        "annotations": {
+          "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "spec": {
+      "description": "Recipe content.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ingredients"],
+      "properties": {
+        "ingredients": {
+          "description": "The OCI artifacts this recipe is made of. Ingredient names must be unique within the recipe (enforced by tooling).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ingredient"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ingredient": {
+      "description": "One OCI artifact referenced by the recipe. Kind-specific fields ('platforms', 'vendorDependencies', 'artifactType', 'extract') are only valid for the kinds that define them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "ref", "version"],
+      "properties": {
+        "name": {
+          "description": "Ingredient name, unique within the recipe (DNS label). Used in logs, status reports, and reserved annotation keys.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 63,
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+        },
+        "kind": {
+          "description": "Ingredient kind: ContainerImage (runnable image, possibly multi-platform), HelmChart (OCI-stored Helm chart), OCIArtifact (any other OCI artifact, e.g. AI models), FileSet (files packaged as an OCI image, mountable or extractable).",
+          "type": "string",
+          "enum": ["ContainerImage", "HelmChart", "OCIArtifact", "FileSet"]
+        },
+        "ref": {
+          "description": "Fully qualified source OCI reference WITHOUT tag or digest: '<registry-host>[:<port>]/<repository-path>'. No default registry, no scheme, no credentials.",
+          "type": "string",
+          "pattern": "^(localhost(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)+(:[0-9]{1,5})?|[a-zA-Z0-9][a-zA-Z0-9-]*:[0-9]{1,5})(/[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*)+$"
+        },
+        "version": {
+          "description": "Exact OCI tag, or version constraint expression (wildcards '12.x', caret '^1.4.0', tilde '~1.4.2', comparisons '>=2.0.0', conjunctions '>=2.0.0 <3.0.0'). Cooked recipes must use an exact tag (enforced by tooling).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "digest": {
+          "description": "Content digest of the artifact's top-level manifest (the image index for multi-platform images). Optional in drafts, required in cooked recipes (enforced by tooling). Registered algorithms: sha256, sha512.",
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$|^sha512:[a-f0-9]{128}$"
+        },
+        "platforms": {
+          "description": "ContainerImage and FileSet only. Platforms required at the destination, as 'os/arch[/variant]'. Unlisted platforms may be omitted from transfer; if absent, all platforms are transferred.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+/[a-z0-9_]+(/[a-z0-9_.-]+)?$"
+          }
+        },
+        "vendorDependencies": {
+          "description": "HelmChart only. When true, chart dependencies are resolved and embedded at cook time, producing a new artifact whose digest is recorded (the upstream digest should be kept in the 'recipe.tobby.dev/upstream-digest.<name>' annotation). Default false: the chart is transferred bit-for-bit and upstream signatures remain verifiable.",
+          "type": "boolean",
+          "default": false
+        },
+        "artifactType": {
+          "description": "OCIArtifact only. Expected artifact type (media type syntax) of the fetched manifest; when set, a mismatch fails the ingredient. Guards against tag-reuse and repository confusion.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}$"
+        },
+        "extract": {
+          "description": "FileSet only. Extraction hints for consumers; does not change what is transferred (the image is always copied bit-exact and in full).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "paths": {
+              "description": "Slash-separated glob patterns ('*', '**'), relative to the image root, selecting what to materialize on extraction. Absent means the whole root filesystem. Absolute paths and '..' components are forbidden.",
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "allOf": [
+                  { "pattern": "^[^/]" },
+                  { "not": { "pattern": "(^|/)\\.\\.(/|$)" } }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "ContainerImage" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "vendorDependencies": false,
+              "artifactType": false,
+              "extract": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "HelmChart" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "platforms": false,
+              "artifactType": false,
+              "extract": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "OCIArtifact" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "platforms": false,
+              "vendorDependencies": false,
+              "extract": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "FileSet" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "vendorDependencies": false,
+              "artifactType": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

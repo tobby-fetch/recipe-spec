@@ -1,0 +1,49 @@
+# Example: the Retriever of one zone (here, a restricted zone).
+#
+# A Retriever is the complete desired state of its zone: which recipes, at
+# which versions, from which cookbook. A transfer tool consumes it:
+#   - passthrough mode: periodic re-resolution against the cookbook, pushing
+#     only what is missing in the zone registry;
+#   - mirror mode: resolution once per synchronization onto removable media,
+#     for air-gapped delivery.
+#
+# Each entry resolves independently (highest version matching the
+# constraint), the recipe signature is verified against the configured trust
+# roots, then the recipe artifact AND all its ingredients are transferred.
+# Anything in the zone not reachable from this list is eligible for external
+# mark-and-sweep cleanup.
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Retriever
+metadata:
+  name: restricted-zone
+  description: >-
+    Desired recipe set for the restricted zone, resolved from the production
+    cookbook.
+  labels:
+    recipe.tobby.dev/zone: restricted
+spec:
+  # Default cookbook (hostname + repository namespace; credentials are
+  # supplied out of band in kubernetes.io/dockerconfigjson format).
+  cookbook: registry.prod.example.com/cookbook
+  recipes:
+    # Exact version: only wordpress 6.8.2 is acceptable.
+    - name: wordpress
+      version: "6.8.2"
+
+    # Wildcard constraint: the highest 16.x release published to the
+    # cookbook (pre-releases excluded).
+    - name: postgresql
+      version: "16.x"
+
+    # Caret constraint: >=1.4.0 <2.0.0.
+    - name: sentiment-analyzer
+      version: "^1.4.0"
+
+    # Conjunction (AND) of comparison constraints.
+    - name: monitoring-stack
+      version: ">=2.0.0 <3.0.0"
+
+    # Per-entry cookbook override: this recipe comes from another cookbook.
+    - name: site-config
+      version: "~2.3.0"
+      cookbook: registry.tools.example.com/cookbook
