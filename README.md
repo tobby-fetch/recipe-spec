@@ -20,7 +20,7 @@ read, validate, and emit Recipes:
 | **Specification** of the `Recipe` and `Retriever` kinds (`recipe.tobby.dev/v1alpha1`, draft) | [RECIPE-SPEC.md](RECIPE-SPEC.md) |
 | **JSON Schemas** (draft 2020-12, strict — unknown fields rejected) | [`schemas/`](schemas/) |
 | **Examples** (cooked and draft recipes, a zone Retriever) | [`examples/`](examples/) |
-| **Go SDK** (parsing, validation, serialization) | lands with the first tagged release |
+| **Go SDK** (parsing, validation, serialization) | [`recipe/v1alpha1`](recipe/v1alpha1/) — see [Go SDK](#go-sdk) |
 
 Highlights of the format:
 
@@ -48,6 +48,36 @@ OCI assets across network zones.
 > follows the Kubernetes deprecation philosophy. Review and issues welcome.
 
 Landing page: **https://tobby-fetch.github.io/recipe-spec/**
+
+## Go SDK
+
+The reference implementation of the format lives in this module:
+
+```sh
+go get github.com/tobby-fetch/recipe-spec
+```
+
+```go
+import v1alpha1 "github.com/tobby-fetch/recipe-spec/recipe/v1alpha1"
+
+r, err := v1alpha1.ParseRecipe(data) // strict: unknown fields are rejected
+if err != nil {
+    var errs v1alpha1.ErrorList      // one entry per violation, with field path
+    // ...
+}
+if err := r.Validate(v1alpha1.ProfileCooked); err != nil {
+    // not publishable: missing digests or unresolved version constraints
+}
+```
+
+Parsing validates against the embedded JSON Schemas plus the rules the
+specification delegates to tooling (ingredient name uniqueness, the §9
+constraint grammar). A parsed recipe is always a valid **draft**; the
+**cooked** profile additionally requires a digest and an exact-tag version
+on every ingredient (§8). `ParseConstraint` implements the §9 version
+grammar (`Match` a tag, `Resolve` a tag list; `||` is rejected). See the
+[package documentation](https://pkg.go.dev/github.com/tobby-fetch/recipe-spec/recipe/v1alpha1)
+for details.
 
 ## License
 
