@@ -1,0 +1,43 @@
+# golangci-lint v2 configuration for the recipe-spec Go SDK.
+# Policy: no rule is excluded without a written justification next to the
+# exclusion (here or as an inline directive with a `-- reason`).
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - copyloopvar
+    - errcheck
+    - errorlint
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nilerr
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        # fieldalignment: struct layouts in this package mirror the field
+        # order of the specification for readability; the memory saved by
+        # reordering is irrelevant for documents this small.
+        - fieldalignment
+    misspell:
+      locale: US
+  # No exclusion presets: the default v2 behavior (nothing excluded) is
+  # exactly the strictness this repository wants.
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/tobby-fetch/recipe-spec

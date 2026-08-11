@@ -1,6 +1,9 @@
-# Tool versions for the recipe-spec website (portable across machines / CI via mise).
-# Matches the versions the project is developed and built with.
+# Tool versions for the recipe-spec Go SDK and website (portable across
+# machines / CI via mise). Matches the versions the project is developed and
+# built with.
 [tools]
+go = "1.25.6"
+golangci-lint = "2.6.1"
 node = "24.18.0"
 pnpm = "10.33.2"
 gitleaks = "8.30.1"
@@ -17,6 +20,18 @@ run = "git config core.hooksPath .githooks && echo 'hooks enabled (.githooks)'"
 [tasks.secrets-scan]
 description = "Scan the full git history for leaked secrets (gitleaks)"
 run = "gitleaks git --redact --no-banner ."
+
+# Run the Go SDK tests (race detector on, twice, as in CI).
+#   mise run test
+[tasks.test]
+description = "Run the Go SDK tests (go test -race -count=2)"
+run = "go test -race -count=2 ./..."
+
+# Lint the Go SDK.
+#   mise run lint
+[tasks.lint]
+description = "Lint the Go SDK (golangci-lint)"
+run = "golangci-lint run"
 
 # Run the website locally.
 #   mise run doc
