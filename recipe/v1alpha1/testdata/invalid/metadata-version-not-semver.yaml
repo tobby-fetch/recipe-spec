@@ -1,0 +1,11 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: demo
+  version: "6.8"
+spec:
+  ingredients:
+    - name: app
+      kind: ContainerImage
+      ref: docker.io/library/nginx
+      version: 1.25.0

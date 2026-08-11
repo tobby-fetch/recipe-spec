@@ -1,0 +1,5 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Cookbook
+metadata:
+  name: demo
+spec: {}

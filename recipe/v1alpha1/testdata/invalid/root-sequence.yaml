@@ -1,0 +1,2 @@
+- apiVersion: recipe.tobby.dev/v1alpha1
+- kind: Recipe

@@ -1,0 +1,10 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Retriever
+metadata:
+  name: restricted-zone
+  version: 1.0.0
+spec:
+  cookbook: registry.example.com/cookbook
+  recipes:
+    - name: wordpress
+      version: "6.8.2"

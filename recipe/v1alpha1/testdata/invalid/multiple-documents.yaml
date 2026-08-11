@@ -1,0 +1,23 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: first
+  version: 1.0.0
+spec:
+  ingredients:
+    - name: app
+      kind: ContainerImage
+      ref: docker.io/library/nginx
+      version: 1.25.0
+---
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: second
+  version: 1.0.0
+spec:
+  ingredients:
+    - name: app
+      kind: ContainerImage
+      ref: docker.io/library/nginx
+      version: 1.25.0

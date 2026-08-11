@@ -1,0 +1,7 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: demo
+  version: 1.0.0
+spec:
+  ingredients: []
