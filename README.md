@@ -21,6 +21,8 @@ read, validate, and emit Recipes:
 | **JSON Schemas** (draft 2020-12, strict — unknown fields rejected) | [`schemas/`](schemas/) |
 | **Examples** (cooked and draft recipes, a zone Retriever) | [`examples/`](examples/) |
 | **Go SDK** (parsing, validation, serialization) | [`recipe/v1alpha1`](recipe/v1alpha1/) — see [Go SDK](#go-sdk) |
+| **CLI** (`recipe lint`: validation from the shell and CI) | [`cmd/recipe`](cmd/recipe/) — see [CLI](#cli) |
+| **Guides** (publishing with OCI tooling, packaging a FileSet) | [website guides](https://tobby-fetch.github.io/recipe-spec/) — see [Guides](#guides) |
 
 Highlights of the format:
 
@@ -78,6 +80,42 @@ on every ingredient (§8). `ParseConstraint` implements the §9 version
 grammar (`Match` a tag, `Resolve` a tag list; `||` is rejected). See the
 [package documentation](https://pkg.go.dev/github.com/tobby-fetch/recipe-spec/recipe/v1alpha1)
 for details.
+
+## CLI
+
+The `recipe` command wraps the SDK for shell and CI use:
+
+```sh
+go install github.com/tobby-fetch/recipe-spec/cmd/recipe@latest
+```
+
+```sh
+recipe lint examples/                     # draft profile (the default)
+recipe lint --profile cooked recipe.yaml  # publishable? (§8: digests + exact tags)
+recipe lint --output json manifests/      # machine-readable findings
+```
+
+`recipe lint` parses and validates every given document through the SDK —
+never through logic of its own. A directory argument stands for every
+`*.yaml`/`*.yml` file under it, recursively, and multi-document streams
+(`---` separators) are accepted, each document validated independently
+(§5). Findings are reported one per line —
+`<file>[#doc N]: <path>: <message> (<rule>)` — or, with `--output json`,
+as a stable array of `{file, document, path, rule, message}` objects.
+Exit codes: 0 all documents valid, 1 findings, 2 usage or I/O error.
+
+## Guides
+
+Two hands-on guides complement the specification:
+
+- [**Publishing recipes with standard OCI tooling**](https://tobby-fetch.github.io/recipe-spec/guides/publishing-recipes/)
+  — push a cooked recipe to a cookbook with `oras`, sign it with `cosign`
+  (key-based, offline-verifiable), and copy it across zones with its
+  signature (§11–§12).
+- [**Packaging a FileSet**](https://tobby-fetch.github.io/recipe-spec/guides/packaging-a-fileset/)
+  — build a reproducible, single-layer OCI image out of arbitrary files
+  with a deterministic digest, honoring the extraction safety rules
+  (§7.4, §14.5).
 
 ## License
 

@@ -19,6 +19,19 @@ module follows Go's module versioning conventions.
 - Go SDK (`recipe/v1alpha1`): strict parsing, draft and cooked profile
   validation, and the `§9` version-constraint grammar (`ParseConstraint`,
   `Match`, `Resolve`).
+- CLI (`cmd/recipe`): `recipe lint` validates files and directories
+  through the SDK, with draft and cooked profiles, multi-document YAML
+  streams (each document validated independently, `§5`), text or JSON
+  reporting, and CI-friendly exit codes (0 valid, 1 findings, 2 usage or
+  I/O error). Install with
+  `go install github.com/tobby-fetch/recipe-spec/cmd/recipe@latest`.
+- Website guides, linked from the README and the landing page:
+  *Publishing recipes with standard OCI tooling* (`oras` push per the
+  `§11.2` artifact layout, key-based `cosign` signing and offline
+  verification, signature-preserving copies across zones) and *Packaging
+  a FileSet* (reproducible single-layer OCI image with a deterministic
+  digest, producer-side `§14.5` safety rules, mount and extraction
+  consumption).
 - CI: lint (`gofmt`, `golangci-lint`), build, `go vet`, example validation
   against the SDK and schemas, and race-detected tests with coverage.
 
