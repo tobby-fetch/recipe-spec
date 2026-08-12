@@ -125,20 +125,34 @@ out of band by configuration — never inside recipes):
 ```sh
 DIGEST=$(crane digest "$REF")
 
-# Sign by digest, never by tag, and skip the transparency log: air-gapped
-# consumers cannot reach Rekor, offline verifiability is the requirement.
-cosign sign --key cosign.key --tlog-upload=false \
+# Sign by digest, never by tag, and keep the transparency log out of it:
+# air-gapped consumers cannot reach Rekor, offline verifiability is the
+# requirement. On cosign 3.x, --tlog-upload=false is only accepted once
+# the default signing config is switched off.
+cosign sign --key cosign.key --yes \
+  --use-signing-config=false --tlog-upload=false \
   "registry.example.com/cookbook/site-config@${DIGEST}"
 ```
 
-The signature is stored **in the same repository**, under the tag
-`sha256-<manifest-digest>.sig` (§12.2) — one more ordinary OCI artifact:
+Those flags are not cosmetic: a plain `cosign sign --key …` on cosign 3.x
+**uploads the signature to the public Rekor log**, which a restricted-zone
+signer must not do, and it fails to verify where there is no network.
+
+The signature is stored **in the same repository**, as one more ordinary
+OCI artifact. Which shape it takes depends on your cosign version, and
+§12.2 requires consumers to accept both — so either is fine:
 
 ```sh
 crane ls registry.example.com/cookbook/site-config
 # 2.3.1
-# sha256-xxxxxxxx…xxxx.sig
+# sha256-xxxxxxxx…xxxx.sig     <- attached signature (classic layout)
+# sha256-xxxxxxxx…xxxx         <- Sigstore bundle (cosign 3.x default),
+#                                 the fallback tag of the referrers index
 ```
+
+Add `--new-bundle-format=false` to the command above if you want the
+classic attached layout explicitly — useful when older consumers, outside
+this specification, have to read your cookbook too.
 
 Verification needs only the public key, no network services:
 

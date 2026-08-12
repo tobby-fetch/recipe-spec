@@ -695,13 +695,29 @@ required properties are:
 
 ### 12.2 Signature transport
 
-Signatures follow the cosign attached-signature convention: the signature
-artifact is stored **in the same repository** as the recipe, under the tag
-`sha256-<manifest-digest>.sig`. Consequently:
+Signatures are stored **in the same repository** as the recipe, in either
+of the two layouts cosign publishes. Producers pick one; consumers MUST
+accept both, because the choice belongs to whoever signs:
+
+- **attached signature** (the classic layout): the signature artifact is
+  tagged `sha256-<manifest-digest>.sig`, and its layer is a SimpleSigning
+  payload pinning the subject digest;
+- **Sigstore bundle** (the default of cosign 3.x): the signature artifact
+  *refers* to the subject — `artifactType`
+  `application/vnd.dev.sigstore.bundle.v0.x+json`, a `subject` descriptor,
+  and one bundle layer whose DSSE envelope carries an in-toto statement
+  naming the subject digest. It is discovered through the OCI 1.1
+  Referrers API, or through the fallback tag `sha256-<manifest-digest>`
+  that clients create when the registry has no such API.
+
+A consumer that accepted only one layout would reject perfectly valid
+recipes for a reason no signer can guess, so accepting both is normative,
+not a convenience. Consequently:
 
 - transfer tools MUST copy signature artifacts alongside every recipe (and
   alongside ingredients that carry signatures) so that verification remains
-  possible in the destination zone;
+  possible in the destination zone — for the bundle layout this includes
+  the referring artifact and, where it exists, the fallback tag;
 - signing a cooked recipe’s manifest transitively covers the YAML document
   (via the layer digest) and therefore every ingredient’s pinned digest: one
   recipe signature attests the **exact bytes** of the entire delivery.
