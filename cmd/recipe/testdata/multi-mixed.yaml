@@ -1,0 +1,41 @@
+# A multi-document stream for the lint tests: the leading comment block and
+# the explicit "---" below belong to the first document (one document so
+# far, not two). The second document misspells "digest", the third is valid
+# again, and the trailing separator leaves a final empty document that lint
+# must skip.
+---
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: first
+  version: 1.0.0
+spec:
+  ingredients:
+    - name: app
+      kind: ContainerImage
+      ref: docker.io/library/nginx
+      version: 1.25.0
+---
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: second
+  version: 1.0.0
+spec:
+  ingredients:
+    - name: app
+      kind: ContainerImage
+      ref: docker.io/library/nginx
+      version: 1.25.0
+      digset: sha256:4c679da467e9bfa631ae93135c215bdb46205a90364acf4e5510ba39f4fa0965
+---
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Retriever
+metadata:
+  name: zone
+spec:
+  cookbook: registry.example.com/cookbook
+  recipes:
+    - name: first
+      version: 1.0.0
+---
