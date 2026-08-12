@@ -5,7 +5,8 @@ const description =
   "The open specification for Recipes — declarative, signable, fully pinned descriptions of the OCI artifacts that make up a software delivery. The format that drives Tobby, open to every tool.";
 const repo = "https://github.com/tobby-fetch/recipe-spec";
 const tobbySite = "https://tobby-fetch.github.io/tobby-fetch/";
-const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK (first tagged release)"];
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK", "CLI linter", "Guides"];
 ---
 
 <!doctype html>
@@ -192,6 +193,9 @@ const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK (first tagge
         margin: 0 0.6rem;
         opacity: 0.5;
       }
+      .links + .links {
+        margin-top: 0.5rem;
+      }
 
       @keyframes rise {
         from { opacity: 0; transform: translateY(14px); }
@@ -282,9 +286,9 @@ const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK (first tagge
         — container images, Helm charts, AI models, files — to an exact OCI
         digest, so one signature attests the whole delivery. It is the format
         that drives <a href={tobbySite} rel="noopener">Tobby</a> across network
-        zones, and it is published here — specification, JSON Schemas, and
-        examples, with a Go SDK landing at the first tagged release — under
-        Apache-2.0, so any tool can read, validate, and emit Recipes.
+        zones, and it is published here — specification, JSON Schemas,
+        examples, and a Go SDK with its CLI linter — under Apache-2.0, so any
+        tool can read, validate, and emit Recipes.
       </p>
 
       <ul class="ships">
@@ -293,6 +297,11 @@ const ships = ["Specification", "JSON Schemas", "Examples", "Go SDK (first tagge
 
       <span class="badge"><span class="pulse"></span>Specification in progress</span>
 
+      <p class="links">
+        <a href={`${base}/guides/publishing-recipes/`}>Publishing recipes</a>
+        <span class="sep">·</span>
+        <a href={`${base}/guides/packaging-a-fileset/`}>Packaging a FileSet</a>
+      </p>
       <p class="links">
         <a href={repo} rel="noopener">github.com/tobby-fetch/recipe-spec</a>
         <span class="sep">·</span>

@@ -1,0 +1,222 @@
+---
+// Layout for the guide pages: same palette and typography as the landing
+// page, in a scrollable long-form article shape. Markdown guide pages
+// select it through their `layout` frontmatter.
+const { frontmatter } = Astro.props;
+const title = frontmatter?.title ?? Astro.props.title;
+const description = frontmatter?.description ?? Astro.props.description;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const repo = "https://github.com/tobby-fetch/recipe-spec";
+const spec = `${repo}/blob/main/RECIPE-SPEC.md`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="dark light" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="article" />
+    <title>{title} — Recipe Spec</title>
+    <style is:global>
+      :root {
+        color-scheme: dark light;
+        --bg: #0b0d12;
+        --bg-raised: #12151d;
+        --fg: #e8eaf0;
+        --muted: #949aab;
+        --accent: #f0a92e;
+        --accent-soft: #ffc25c;
+        --hair: rgba(255, 255, 255, 0.09);
+        --chip: rgba(255, 255, 255, 0.05);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #faf9f6;
+          --bg-raised: #f1efe9;
+          --fg: #1a1d24;
+          --muted: #5f6472;
+          --accent: #c97e12;
+          --accent-soft: #a9660b;
+          --hair: rgba(0, 0, 0, 0.1);
+          --chip: rgba(0, 0, 0, 0.04);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      header.site {
+        border-bottom: 1px solid var(--hair);
+      }
+      header.site nav {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 0.9rem 1.5rem;
+        display: flex;
+        align-items: baseline;
+        gap: 1.25rem;
+      }
+      header.site .brand {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+        text-decoration: none;
+      }
+      header.site .brand .dot { color: var(--accent); }
+      header.site .nav-links {
+        margin-left: auto;
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+      }
+      header.site .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: color 0.15s ease, border-color 0.15s ease;
+      }
+      header.site .nav-links a:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      main {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 5rem;
+      }
+      main > header.guide p.lede {
+        color: var(--muted);
+        font-size: 1.05rem;
+        margin: 0.5rem 0 0;
+      }
+
+      h1 {
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-size: 1.35rem;
+        letter-spacing: -0.01em;
+        margin: 2.5rem 0 0.75rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--hair);
+      }
+      h3 { font-size: 1.05rem; margin: 1.75rem 0 0.5rem; }
+
+      a { color: var(--accent-soft); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.86em;
+        background: var(--chip);
+        border: 1px solid var(--hair);
+        border-radius: 4px;
+        padding: 0.08em 0.35em;
+      }
+      pre {
+        background: var(--bg-raised) !important;
+        border: 1px solid var(--hair);
+        border-radius: 8px;
+        padding: 0.9rem 1.1rem;
+        overflow-x: auto;
+        font-size: 0.84rem;
+        line-height: 1.55;
+      }
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      /* Shiki dual themes: token colors follow the color scheme (the
+         block background is ours, above). */
+      @media (prefers-color-scheme: dark) {
+        .astro-code span {
+          color: var(--shiki-dark) !important;
+          font-style: var(--shiki-dark-font-style) !important;
+          font-weight: var(--shiki-dark-font-weight) !important;
+        }
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        display: block;
+        overflow-x: auto;
+      }
+      th, td {
+        border: 1px solid var(--hair);
+        padding: 0.45rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th { background: var(--chip); }
+
+      blockquote {
+        margin: 1.25rem 0;
+        padding: 0.75rem 1.1rem;
+        border-left: 3px solid var(--accent);
+        background: var(--chip);
+        border-radius: 0 8px 8px 0;
+      }
+      blockquote p { margin: 0.25rem 0; }
+
+      hr { border: none; border-top: 1px solid var(--hair); margin: 2rem 0; }
+
+      footer.site {
+        border-top: 1px solid var(--hair);
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      footer.site p {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 1.25rem 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <nav>
+        <a class="brand" href={`${base}/`}>Recipe Spec<span class="dot">.</span></a>
+        <span class="nav-links">
+          <a href={spec} rel="noopener">Specification</a>
+          <a href={repo} rel="noopener">GitHub</a>
+        </span>
+      </nav>
+    </header>
+    <main>
+      <header class="guide">
+        <h1>{title}</h1>
+        {description && <p class="lede">{description}</p>}
+      </header>
+      <slot />
+    </main>
+    <footer class="site">
+      <p>
+        Apache-2.0 · Copyright © 2026 infraBuilder SASU and contributors ·
+        <a href={repo} rel="noopener">tobby-fetch/recipe-spec</a>
+      </p>
+    </footer>
+  </body>
+</html>
