@@ -21,6 +21,7 @@ read, validate, and emit Recipes:
 | **JSON Schemas** (draft 2020-12, strict — unknown fields rejected) | [`schemas/`](schemas/) |
 | **Examples** (cooked and draft recipes, a zone Retriever) | [`examples/`](examples/) |
 | **Go SDK** (parsing, validation, serialization) | [`recipe/v1alpha1`](recipe/v1alpha1/) — see [Go SDK](#go-sdk) |
+| **Cookbook artifacts** (§11 layout, publication checks, immutability) | [`cookbook`](cookbook/) — see [Cookbook artifacts](#cookbook-artifacts) |
 | **CLI** (`recipe lint`: validation from the shell and CI) | [`cmd/recipe`](cmd/recipe/) — see [CLI](#cli) |
 | **Guides** (publishing with OCI tooling, packaging a FileSet) | [website guides](https://tobby-fetch.github.io/recipe-spec/) — see [Guides](#guides) |
 
@@ -80,6 +81,45 @@ on every ingredient (§8). `ParseConstraint` implements the §9 version
 grammar (`Match` a tag, `Resolve` a tag list; `||` is rejected). See the
 [package documentation](https://pkg.go.dev/github.com/tobby-fetch/recipe-spec/recipe/v1alpha1)
 for details.
+
+## Cookbook artifacts
+
+A recipe is published as an OCI artifact with a layout the specification
+fixes (§11.2). The `cookbook` package owns that layout — and nothing else:
+it never opens a connection and does not know what a registry is. It takes
+bytes and returns bytes, so that every implementation agrees on what a
+recipe artifact *is*, while each keeps the registry client it already has.
+
+```go
+import "github.com/tobby-fetch/recipe-spec/cookbook"
+
+// Publishing: validate, then assemble the artifact for its location.
+art, err := cookbook.Build(doc, "wordpress", "6.8.2")
+if err != nil {
+    // refused: not a cooked recipe (§8), or metadata disagrees with the
+    // location (§11.3) — before a single byte crosses the wire
+}
+// Upload art.Config and art.Document, PUT art.Manifest.
+// art.Manifest.Digest is what `cosign sign` takes.
+
+// Consuming: enforce the same layout on the way in.
+layout, err := cookbook.VerifyManifest(manifestBytes)
+```
+
+Cooked recipes are immutable (§8). Before writing a tag that already
+exists, read its digest — a registry operation, therefore yours — and ask
+what writing would mean:
+
+```go
+switch cookbook.DecideRepublication(published, art.Manifest.Digest) {
+case cookbook.RepublicationIdentical: // already there, byte for byte: a no-op
+case cookbook.RepublicationConflict:  // different content: bump metadata.version
+}
+```
+
+The artifact envelope is versioned by its media type, independently of the
+document schema (§4.4), which is why this package carries no `v1alpha1` in
+its path.
 
 ## CLI
 

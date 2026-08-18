@@ -19,6 +19,14 @@ module follows Go's module versioning conventions.
 - Go SDK (`recipe/v1alpha1`): strict parsing, draft and cooked profile
   validation, and the `§9` version-constraint grammar (`ParseConstraint`,
   `Match`, `Resolve`).
+- Go SDK (`cookbook`): the registry-independent half of `§11` — `Build`
+  validates a document and assembles the `§11.2` artifact for a given
+  publication location (refusing drafts per `§8` and metadata that
+  disagrees with the location per `§11.3`), `VerifyManifest` enforces the
+  same layout on the consuming side, and `DecideRepublication` states what
+  writing an existing tag means under `§8` immutability. No network, no
+  registry client, no new dependency: implementations share what a recipe
+  artifact *is* and keep their own transport.
 - CLI (`cmd/recipe`): `recipe lint` validates files and directories
   through the SDK, with draft and cooked profiles, multi-document YAML
   streams (each document validated independently, `§5`), text or JSON
