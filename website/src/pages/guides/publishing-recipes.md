@@ -60,9 +60,12 @@ oras push "$REF" \
 ```
 
 Name the file `recipe.yaml`: oras records the file name in the layer's
-`org.opencontainers.image.title` annotation, and §11.2 fixes that title.
-Check the result — this is also what consumers verify before trusting an
-artifact claiming to be a recipe:
+`org.opencontainers.image.title` annotation, so `oras pull` will write it
+back under that name. The title is a convention, not a rule — §11.2 shows
+it in its example but requires nothing of it, and a conforming consumer
+must not reject an artifact over it. Check the result — the four fields
+below are what consumers actually verify before trusting an artifact
+claiming to be a recipe:
 
 ```sh
 oras manifest fetch "$REF" | jq '{

@@ -607,6 +607,13 @@ artifacts that do not match this layout. The layout is deliberately
 compatible with generic OCI tooling (`oras push`, `oras pull`, `crane`,
 `skopeo`).
 
+The `org.opencontainers.image.title` annotation shown above is
+illustrative, not normative. Publishers SHOULD set it to `recipe.yaml`, so
+that a generic `oras pull` writes a sensibly named file; consumers MUST
+NOT depend on it, and MUST NOT reject an artifact over its value or its
+absence. Requiring it would contradict the compatibility promised in the
+paragraph above: generic tooling writes whatever file name it was handed.
+
 ### 11.3 Naming and tags
 
 ```

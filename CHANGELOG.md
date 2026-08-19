@@ -19,6 +19,12 @@ module follows Go's module versioning conventions.
 - Go SDK (`recipe/v1alpha1`): strict parsing, draft and cooked profile
   validation, and the `§9` version-constraint grammar (`ParseConstraint`,
   `Match`, `Resolve`).
+- `§11.2`: the layer's `org.opencontainers.image.title` annotation is
+  stated to be illustrative rather than normative. It was only ever shown
+  in the example manifest, no implementation checked it, and requiring it
+  would contradict the compatibility with generic OCI tooling promised in
+  the same paragraph — that tooling writes whatever file name it was
+  handed. The publishing guide claimed the opposite and is corrected.
 - Go SDK (`cookbook`): the registry-independent half of `§11` — `Build`
   validates a document and assembles the `§11.2` artifact for a given
   publication location (refusing drafts per `§8` and metadata that
