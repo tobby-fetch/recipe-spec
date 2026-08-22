@@ -29,13 +29,15 @@
           "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
         },
         "version": {
-          "description": "Version of the described application (Semantic Versioning 2.0.0, without build metadata: '+' is not a legal OCI tag character). Becomes the OCI tag on publication.",
+          "description": "Version of the described application (Semantic Versioning 2.0.0, without build metadata: '+' is not a legal OCI tag character). Becomes the OCI tag on publication, hence the 128-character OCI tag length limit.",
           "type": "string",
+          "maxLength": 128,
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-((0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$"
         },
         "description": {
-          "description": "Human-readable, one-paragraph description of the recipe.",
-          "type": "string"
+          "description": "Human-readable, one-paragraph description of the recipe (at most 2048 characters).",
+          "type": "string",
+          "maxLength": 2048
         },
         "labels": {
           "description": "Identifying key/value pairs intended for selection and filtering (Kubernetes label syntax; values at most 63 characters).",
@@ -50,10 +52,11 @@
           }
         },
         "annotations": {
-          "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification.",
+          "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification. Values are at most 4096 characters.",
           "type": "object",
           "additionalProperties": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 4096
           }
         }
       }

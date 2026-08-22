@@ -20,14 +20,24 @@ import (
 	"github.com/tobby-fetch/recipe-spec/schemas"
 )
 
-// Parsing is deliberately strict (RECIPE-SPEC.md §4.3): the YAML document
-// is decoded generically, normalized to its JSON representation (§5 requires
-// documents to be JSON-representable), validated against the embedded JSON
-// Schema — which rejects unknown fields — and only then decoded into the
-// typed structs. Documents that parse successfully also satisfy the
-// draft-level semantic rules delegated to tooling by §16 (ingredient name
-// uniqueness, version grammar); use Recipe.Validate with ProfileCooked to
-// additionally require full pinning (§8).
+// Parsing is deliberately strict (RECIPE-SPEC.md §4.3): the input is
+// bounded by MaxParseBytes, then the YAML document is decoded generically,
+// normalized to its JSON representation (§5 requires documents to be
+// JSON-representable), validated against the embedded JSON Schema — which
+// rejects unknown fields — and only then decoded into the typed structs.
+// Documents that parse successfully also satisfy the draft-level semantic
+// rules delegated to tooling by §16 (ingredient name uniqueness, version
+// grammar); use Recipe.Validate with ProfileCooked to additionally require
+// full pinning (§8).
+
+// MaxParseBytes bounds the input accepted by Parse, ParseRecipe, and
+// ParseRetriever: 4 MiB, the §5 document bound, which is also the §11.2
+// bound on a published document layer (cookbook.MaxDocumentBytes). A
+// recipe is a small YAML file; without this bound a hostile or accidental
+// multi-megabyte input would cost hundreds of megabytes of memory before
+// validation could say anything about it. Larger input is rejected
+// immediately with RuleDocumentTooLarge, before any decoding.
+const MaxParseBytes = 4 << 20
 
 // ParseRecipe parses and validates a single YAML (or JSON) document of kind
 // Recipe. On failure it returns an ErrorList describing every violation.
@@ -63,6 +73,13 @@ func Parse(data []byte) (Object, error) {
 // parseDocument implements ParseRecipe, ParseRetriever, and Parse.
 // wantKind restricts the accepted kind; empty means any supported kind.
 func parseDocument(data []byte, wantKind string) (Object, error) {
+	if len(data) > MaxParseBytes {
+		return nil, ErrorList{{
+			Rule: RuleDocumentTooLarge,
+			Message: fmt.Sprintf("document is %d bytes, above the %d-byte bound on a recipe document (§5); refusing to decode it",
+				len(data), MaxParseBytes),
+		}}
+	}
 	root, jsonBytes, instance, errs := decodeDocument(data)
 	if errs != nil {
 		return nil, errs.errOrNil()
@@ -338,5 +355,27 @@ func schemaLeafMessage(e *jsonschema.ValidationError) string {
 			}
 		}
 	}
+	if _, ok := e.ErrorKind.(*kind.Not); ok {
+		// The validator's message for a violated `not` subschema is a bare
+		// "'not' failed", which tells the author nothing. The published
+		// schemas contain exactly one `not`: the ban on '..' components in
+		// extract.paths entries (§7.4). Name that rule; keep the generic
+		// message as a fallback should a future schema revision add
+		// another `not` without extending this mapping.
+		if instanceLocationHas(e.InstanceLocation, "paths") {
+			return "path must not contain '..' components (§7.4)"
+		}
+	}
 	return e.ErrorKind.LocalizedString(schemaMessagePrinter)
+}
+
+// instanceLocationHas reports whether one of the segments of a schema
+// violation's instance location is the given field name.
+func instanceLocationHas(segments []string, field string) bool {
+	for _, seg := range segments {
+		if seg == field {
+			return true
+		}
+	}
+	return false
 }

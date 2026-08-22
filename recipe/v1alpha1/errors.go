@@ -21,6 +21,9 @@ const (
 	// RuleMultipleDocuments: the input is a multi-document YAML stream;
 	// this package parses exactly one document per call (§5).
 	RuleMultipleDocuments = "multiple-documents"
+	// RuleDocumentTooLarge: the input exceeds MaxParseBytes, the §5 bound
+	// on a recipe document. It is rejected before any decoding.
+	RuleDocumentTooLarge = "document-too-large"
 	// RuleDocumentRoot: the document root is not a mapping (§5).
 	RuleDocumentRoot = "document-root"
 	// RuleAPIVersion: apiVersion is missing, not a string, or not

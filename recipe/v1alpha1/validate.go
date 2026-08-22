@@ -117,9 +117,22 @@ func structSchemaErrors(v any, kindName string) ErrorList {
 // recipeSemanticErrors implements the draft-level rules delegated to
 // tooling by §16: ingredient name uniqueness (§6.2) and the constraint
 // grammar of every ingredient version (§9), plus the registry port sanity
-// check on refs.
+// check on refs and the OCI-tag validity of metadata.version (§6.1, §11.3).
 func recipeSemanticErrors(r *Recipe) ErrorList {
 	var errs ErrorList
+	// metadata.version becomes the publication tag verbatim (§11.3), so
+	// beyond being semver it must be a valid OCI tag — in practice this
+	// adds the 128-character tag length limit, which the semver grammar
+	// alone does not impose. The published schema carries the same bound
+	// (maxLength 128); this check keeps hand-built Recipe values honest
+	// through the same rule.
+	if r.Metadata.Version != "" && !ociTagPattern.MatchString(r.Metadata.Version) {
+		errs = append(errs, &FieldError{
+			Path: "metadata.version", Rule: RuleVersionSyntax,
+			Message: fmt.Sprintf("recipe version (%d characters) is not a valid OCI tag: it becomes the publication tag, at most 128 characters of alphanumerics, '.', '_', '-' (§6.1, §11.3)",
+				len(r.Metadata.Version)),
+		})
+	}
 	seen := make(map[string]int, len(r.Spec.Ingredients))
 	for i, ing := range r.Spec.Ingredients {
 		if first, dup := seen[ing.Name]; dup && ing.Name != "" {

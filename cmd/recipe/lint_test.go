@@ -209,6 +209,27 @@ func TestLintDirectoryRecursion(t *testing.T) {
 	}
 }
 
+// TestLintEmptyDirectoryIsAnError pins the CI-facing contract: a directory
+// argument under which no YAML file exists must NOT exit 0 with "all
+// valid" — a mistyped path would silently pass the gate. It exits with the
+// input-error code and says what happened.
+func TestLintEmptyDirectoryIsAnError(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("not yaml\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr := runCLI(t, "lint", dir)
+	if code != exitUsage {
+		t.Fatalf("exit code = %d, want %d\nstdout:\n%s\nstderr:\n%s", code, exitUsage, stdout, stderr)
+	}
+	if !strings.Contains(stderr, "no recipe documents found") {
+		t.Errorf("stderr does not say what went wrong: %q", stderr)
+	}
+	if strings.Contains(stdout, "all valid") {
+		t.Errorf("stdout claims validity with nothing checked:\n%s", stdout)
+	}
+}
+
 func TestLintUsageErrors(t *testing.T) {
 	valid := filepath.Join(examplesDir, "wordpress.yaml")
 	cases := map[string][]string{

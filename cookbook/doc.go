@@ -31,15 +31,22 @@
 // # Republishing
 //
 // Cooked recipes are immutable (§8): a `(name, version)` tag must never
-// point at different content. Before writing, a publisher reads the tag's
-// current digest — a registry operation, so the caller's — and asks
-// [DecideRepublication] what it means:
+// point at a different recipe document. The comparison is made on the
+// document layer digest, not the manifest digest: manifest bytes are not
+// stable across publishing tools (§11.2), the layer is. Before writing, a
+// publisher fetches the tag's current manifest — a registry operation, so
+// the caller's — reads its layout, and asks [DecideRepublication] what
+// republishing means:
 //
-//	switch cookbook.DecideRepublication(published, art.Manifest.Digest) {
+//	layout, err := cookbook.VerifyManifest(publishedManifest)
+//	if err != nil {
+//		return err // whatever holds the tag is not a recipe artifact
+//	}
+//	switch cookbook.DecideRepublication(layout.Document.Digest, art.Document.Digest) {
 //	case cookbook.RepublicationIdentical:
-//		return nil // already published, byte for byte: a no-op, not an error
+//		return nil // same document already published: a no-op, leave the tag alone
 //	case cookbook.RepublicationConflict:
-//		return fmt.Errorf("tag already holds %s; bump metadata.version", published)
+//		return fmt.Errorf("tag already holds document %s; bump metadata.version", layout.Document.Digest)
 //	}
 //
 // # Consuming

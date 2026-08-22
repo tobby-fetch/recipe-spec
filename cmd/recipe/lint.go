@@ -31,7 +31,8 @@ recursively. Multi-document streams ("---" separators) are accepted; each
 document is validated independently (§5).
 
 Exit code: 0 when every document is valid, 1 when there are findings,
-2 on a usage or I/O error.
+2 on a usage or I/O error — including when the arguments name no recipe
+document at all (an empty directory is not a valid input, it is a mistake).
 
 Flags:
 `
@@ -93,6 +94,14 @@ func runLint(args []string, stdout, stderr io.Writer) int {
 	}
 
 	files, ioErr := expandArgs(flags.Args(), stderr)
+	if len(files) == 0 {
+		// Arguments that resolve to nothing — typically a directory with
+		// no *.yaml or *.yml under it. "0 file(s) checked: all valid"
+		// with exit 0 would let a mistyped path pass a CI gate; this is
+		// an input error, and it exits like one.
+		fprint(stderr, "recipe lint: no recipe documents found in the given arguments\n")
+		return exitUsage
+	}
 	var findings []finding
 	multiDoc := make(map[string]bool)
 	filesChecked, documents := 0, 0

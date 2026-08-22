@@ -93,6 +93,69 @@ func TestVerifyManifestRejectsEveryLayoutViolation(t *testing.T) {
 			},
 			field: "layers[0].size",
 		},
+		{
+			// A manifest is attacker-supplied input: a negative size must
+			// never reach the caller's registry client or allocator.
+			name: "a negative layer size",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["size"] = float64(-1)
+			},
+			field: "layers[0].size",
+		},
+		{
+			name: "a zero layer size",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["size"] = float64(0)
+			},
+			field: "layers[0].size",
+		},
+		{
+			name: "an empty layer digest",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["digest"] = ""
+			},
+			field: "layers[0].digest",
+		},
+		{
+			name: "a layer digest with non-hexadecimal content",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["digest"] = "sha256:" + strings.Repeat("z", 64)
+			},
+			field: "layers[0].digest",
+		},
+		{
+			// The digest becomes the consumer's next blob request; path
+			// traversal in it must die here, not in a registry client
+			// that splices it into a URL or a file path.
+			name: "a layer digest carrying path traversal",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["digest"] = "../../../etc/passwd"
+			},
+			field: "layers[0].digest",
+		},
+		{
+			name: "a layer digest of the wrong length",
+			corrupt: func(m map[string]any) {
+				m["layers"].([]any)[0].(map[string]any)["digest"] = "sha256:abc123"
+			},
+			field: "layers[0].digest",
+		},
+		{
+			// §11.2 fixes the config to the one canonical empty config:
+			// any other digest is a smuggled payload.
+			name: "a config digest that is not the canonical empty config",
+			corrupt: func(m map[string]any) {
+				m["config"].(map[string]any)["digest"] = "sha256:" + strings.Repeat("a", 64)
+			},
+			field: "config.digest",
+		},
+		{
+			name: "a config size that is not the canonical two bytes",
+			corrupt: func(m map[string]any) {
+				m["config"].(map[string]any)["size"] = float64(3)
+			},
+			field: "config.size",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := wellFormed(t)

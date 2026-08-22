@@ -150,8 +150,10 @@ func TestValidateHandBuiltViolations(t *testing.T) {
 	}
 }
 
-func TestValidateHandBuiltRetriever(t *testing.T) {
-	rt := &Retriever{
+// handBuiltRetriever returns a valid retriever built in Go, without going
+// through ParseRetriever. Validate must fully check such values too.
+func handBuiltRetriever() *Retriever {
+	return &Retriever{
 		APIVersion: APIVersion,
 		Kind:       KindRetriever,
 		Metadata:   Metadata{Name: "restricted-zone"},
@@ -163,6 +165,10 @@ func TestValidateHandBuiltRetriever(t *testing.T) {
 			},
 		},
 	}
+}
+
+func TestValidateHandBuiltRetriever(t *testing.T) {
+	rt := handBuiltRetriever()
 	if err := rt.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
 	}
@@ -183,6 +189,100 @@ func TestValidateHandBuiltRetriever(t *testing.T) {
 	if !hasError(asList(t, rt.Validate()), RulePortRange, "spec.recipes[1].cookbook", "") {
 		t.Errorf("per-entry cookbook port not checked: %v", rt.Validate())
 	}
+}
+
+// TestMetadataVersionIsBoundedLikeAnOCITag: metadata.version becomes the
+// publication tag (§11.3), and OCI tags stop at 128 characters. A ~170
+// character semver is perfectly valid semver and must still be rejected —
+// by the schema's maxLength and by the SDK's semantic OCI-tag check alike.
+func TestMetadataVersionIsBoundedLikeAnOCITag(t *testing.T) {
+	long := "1.0.0-" + strings.Repeat("a", 164) // 170 characters of valid semver
+	if len(long) != 170 {
+		t.Fatalf("fixture is %d characters, want 170", len(long))
+	}
+
+	t.Run("via ParseRecipe", func(t *testing.T) {
+		// Parsing stops at the schema stage: the maxLength of the
+		// published schema is what rejects the document.
+		doc := strings.Replace(minimalRecipe, "version: 1.0.0", "version: "+long, 1)
+		_, err := ParseRecipe([]byte(doc))
+		if err == nil {
+			t.Fatal("a 170-character metadata.version was accepted")
+		}
+		if !hasError(asList(t, err), RuleSchema, "metadata.version", "") {
+			t.Errorf("no schema error at metadata.version in: %v", err)
+		}
+	})
+
+	t.Run("via Validate on a hand-built recipe", func(t *testing.T) {
+		r := handBuiltRecipe()
+		r.Metadata.Version = long
+		err := r.Validate(ProfileDraft)
+		if err == nil {
+			t.Fatal("a 170-character metadata.version was accepted")
+		}
+		if !hasError(asList(t, err), RuleVersionSyntax, "metadata.version", "128") {
+			t.Errorf("no OCI-tag error at metadata.version in: %v", err)
+		}
+	})
+
+	t.Run("128 characters are fine", func(t *testing.T) {
+		r := handBuiltRecipe()
+		r.Metadata.Version = "1.0.0-" + strings.Repeat("a", 122) // exactly 128
+		if err := r.Validate(ProfileDraft); err != nil {
+			t.Errorf("a 128-character version must pass: %v", err)
+		}
+	})
+}
+
+// TestMetadataStringBounds: metadata.description and annotation values are
+// bounded by the schemas, so a document cannot smuggle megabytes of text
+// through its free-form metadata fields.
+func TestMetadataStringBounds(t *testing.T) {
+	t.Run("recipe description above 2048", func(t *testing.T) {
+		r := handBuiltRecipe()
+		r.Metadata.Description = strings.Repeat("d", 2049)
+		if err := r.Validate(ProfileDraft); err == nil {
+			t.Fatal("a 2049-character description was accepted")
+		} else if !hasError(asList(t, err), RuleSchema, "metadata.description", "") {
+			t.Errorf("no schema error at metadata.description in: %v", err)
+		}
+	})
+	t.Run("recipe annotation value above 4096", func(t *testing.T) {
+		r := handBuiltRecipe()
+		r.Metadata.Annotations = map[string]string{"example.com/note": strings.Repeat("a", 4097)}
+		if err := r.Validate(ProfileDraft); err == nil {
+			t.Fatal("a 4097-character annotation value was accepted")
+		} else if !hasError(asList(t, err), RuleSchema, "metadata.annotations", "") {
+			t.Errorf("no schema error at metadata.annotations in: %v", err)
+		}
+	})
+	t.Run("retriever description above 2048", func(t *testing.T) {
+		rt := handBuiltRetriever()
+		rt.Metadata.Description = strings.Repeat("d", 2049)
+		if err := rt.Validate(); err == nil {
+			t.Fatal("a 2049-character description was accepted")
+		} else if !hasError(asList(t, err), RuleSchema, "metadata.description", "") {
+			t.Errorf("no schema error at metadata.description in: %v", err)
+		}
+	})
+	t.Run("retriever annotation value above 4096", func(t *testing.T) {
+		rt := handBuiltRetriever()
+		rt.Metadata.Annotations = map[string]string{"example.com/note": strings.Repeat("a", 4097)}
+		if err := rt.Validate(); err == nil {
+			t.Fatal("a 4097-character annotation value was accepted")
+		} else if !hasError(asList(t, err), RuleSchema, "metadata.annotations", "") {
+			t.Errorf("no schema error at metadata.annotations in: %v", err)
+		}
+	})
+	t.Run("values at the bounds are fine", func(t *testing.T) {
+		r := handBuiltRecipe()
+		r.Metadata.Description = strings.Repeat("d", 2048)
+		r.Metadata.Annotations = map[string]string{"example.com/note": strings.Repeat("a", 4096)}
+		if err := r.Validate(ProfileDraft); err != nil {
+			t.Errorf("bounds are inclusive: %v", err)
+		}
+	})
 }
 
 func TestValidatePublishLocation(t *testing.T) {

@@ -207,9 +207,47 @@ func TestDecideRepublication(t *testing.T) {
 	const other = "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
 
 	if got := cookbook.DecideRepublication(digest, digest); got != cookbook.RepublicationIdentical {
-		t.Errorf("same content: got %v, want identical — republishing must be a no-op", got)
+		t.Errorf("same document: got %v, want identical — republishing must be a no-op", got)
 	}
 	if got := cookbook.DecideRepublication(other, digest); got != cookbook.RepublicationConflict {
-		t.Errorf("different content: got %v, want conflict — §8 forbids re-pointing a tag", got)
+		t.Errorf("different document: got %v, want conflict — §8 forbids re-pointing a tag", got)
+	}
+}
+
+// TestRepublicationSurvivesForeignManifests pins the reason the decision is
+// made on the document layer digest and not the manifest digest: another
+// conforming publisher (oras, for one) wraps the same document in a
+// manifest with extra annotations, so the manifest digests differ while the
+// recipe is the same. §11.2: only the layer digest is the recipe's
+// identity; treating a foreign envelope as a conflict would break honest
+// retries across tools.
+func TestRepublicationSurvivesForeignManifests(t *testing.T) {
+	art, err := cookbook.Build([]byte(cookedDoc), "demo", "1.0.0")
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	// The same recipe as published by a generic OCI tool: identical layer,
+	// plus the org.opencontainers.image.created manifest annotation that
+	// oras adds on push.
+	foreign := wellFormed(t)
+	foreign["annotations"] = map[string]any{"org.opencontainers.image.created": "2026-07-09T14:32:00Z"}
+	foreignBytes := encode(t, foreign)
+
+	layout, err := cookbook.VerifyManifest(foreignBytes)
+	if err != nil {
+		t.Fatalf("VerifyManifest on the foreign manifest: %v", err)
+	}
+	if got := cookbook.DecideRepublication(layout.Document.Digest, art.Document.Digest); got != cookbook.RepublicationIdentical {
+		t.Errorf("same document under a foreign envelope: got %v, want identical", got)
+	}
+
+	// A genuinely different document must still conflict.
+	changed := strings.Replace(cookedDoc, "1.25.0", "1.25.1", 1)
+	changedArt, err := cookbook.Build([]byte(changed), "demo", "1.0.0")
+	if err != nil {
+		t.Fatalf("Build(changed): %v", err)
+	}
+	if got := cookbook.DecideRepublication(layout.Document.Digest, changedArt.Document.Digest); got != cookbook.RepublicationConflict {
+		t.Errorf("different document: got %v, want conflict", got)
 	}
 }

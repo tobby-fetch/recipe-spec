@@ -10,8 +10,9 @@ pinnable description of a set of OCI artifacts that together make up a software
 delivery. Recipes are designed to be moved between network zones with different
 trust levels — from fully connected zones down to air-gapped zones — by transfer
 tools such as [Tobby](https://github.com/tobby-fetch/tobby-fetch), and to be consumed
-by any third-party tooling through the schemas published in this repository and
-the Go SDK that lands with the first tagged release.
+by any third-party tooling through the schemas published in this repository
+([`schemas/`](schemas/)) and its Go SDK ([`recipe/v1alpha1`](recipe/v1alpha1/)
+and [`cookbook/`](cookbook/)).
 
 ---
 
@@ -171,6 +172,10 @@ document as sole layer); the schema of the document itself is versioned by
 - Encoding MUST be UTF-8.
 - A file SHOULD contain a single document. Tools MAY accept multi-document
   streams (`---` separators) and MUST then treat each document independently.
+- A document MUST NOT exceed **4 MiB** (4 194 304 bytes) — the size bound of
+  the published artifact layer ([§11.2](#112-artifact-layout)). Parsers MAY
+  refuse larger input before decoding it: a recipe is a small YAML file, and
+  an oversized document is hostile or wrong, not big.
 - When published to a cookbook, an OCI artifact contains **exactly one**
   `Recipe` document ([§11.2](#112-artifact-layout)).
 
@@ -190,10 +195,10 @@ spec: {}                                # REQUIRED — kind-specific content
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string | yes | Recipe name. MUST be a valid OCI repository path segment: lowercase alphanumerics with `.`, `_`, `-` separators (`^[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*$`), at most 63 characters. Becomes the last path segment of the cookbook repository ([§11.3](#113-naming-and-tags)). |
-| `version` | string | yes | Version of the **described application** (not of any single ingredient). MUST be valid [Semantic Versioning 2.0.0](https://semver.org) **without build metadata** — `+` is not a legal OCI tag character ([§11.3](#113-naming-and-tags)). Becomes the OCI tag on publication. |
-| `description` | string | no | Human-readable, one-paragraph description. |
+| `version` | string | yes | Version of the **described application** (not of any single ingredient). MUST be valid [Semantic Versioning 2.0.0](https://semver.org) **without build metadata** — `+` is not a legal OCI tag character ([§11.3](#113-naming-and-tags)). Becomes the OCI tag on publication, and MUST therefore also be a valid OCI tag: at most **128 characters** ([§11.3](#113-naming-and-tags)). |
+| `description` | string | no | Human-readable, one-paragraph description. At most 2048 characters. |
 | `labels` | map[string]string | no | Identifying key/value pairs intended for selection and filtering. Keys and values follow Kubernetes label syntax (values ≤ 63 characters). |
-| `annotations` | map[string]string | no | Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys SHOULD be namespaced with a DNS prefix (e.g. `recipe.tobby.dev/…`). |
+| `annotations` | map[string]string | no | Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys SHOULD be namespaced with a DNS prefix (e.g. `recipe.tobby.dev/…`). Values are at most 4096 characters. |
 
 Annotation keys under the `recipe.tobby.dev/` prefix are reserved for this
 specification and its reference tooling. Keys defined by this revision:
@@ -467,8 +472,50 @@ A leading `v` on a tag is ignored for matching (`v1.2.3` ≡ `1.2.3`).
 | Wildcard | `12.x`, `12.4.x`, `*` | Any version with the given fixed components (`x`, `X`, and `*` are equivalent placeholders). |
 | Caret | `^1.4.0` | `>=1.4.0 <2.0.0` — compatible within the leftmost non-zero component (semver caret rule: `^0.3.1` means `>=0.3.1 <0.4.0`). |
 | Tilde | `~1.4.2` | `>=1.4.2 <1.5.0` — patch-level changes only. |
-| Comparison | `>=2.0.0`, `>1.2`, `<=3`, `<4.0.0`, `=1.2.3`, `!=1.5.0` | Standard semver comparison. |
+| Comparison | `>=2.0.0`, `>1.2`, `<=3`, `<4.0.0`, `=1.2.3`, `!=1.5.0` | Standard semver comparison. Partial versions designate a **series** (see below). |
 | Conjunction | `>=2.0.0 <3.0.0` or `>=2.0.0, <3.0.0` | All constraints must hold (whitespace and/or commas separate terms; AND semantics). |
+
+**Version literals in operators.** The version following a comparison,
+caret, or tilde operator has 1 to 3 numeric components, optionally preceded
+by a `v` (ignored, as on tags). Components MUST be numeric with no leading
+zero. A pre-release suffix (`-rc.1`) is only permitted when all three
+components are given (`>=1.2-rc.1` is invalid). Build metadata (`+…`),
+wildcard placeholders combined with an operator (`>1.x`), more than three
+components, and `==` (write `=`) MUST be rejected.
+
+**Partial versions designate series.** When a comparison operator is given
+fewer than three components, the missing components do NOT default to zero
+on both sides: the partial version designates the whole series it names
+(`1.2` designates `1.2.x`; `3` designates `3.x.y`), and the operator
+applies to that series. Normatively, with `X.Y` standing for a two-component
+literal (one-component literals `X` behave identically with the series
+`X.*.*` and the series end `(X+1).0.0`):
+
+| Term | Meaning | Example |
+| --- | --- | --- |
+| `=X.Y` | Within the series: `>=X.Y.0 <X.(Y+1).0` | `=1.2` matches `1.2.9`, not `1.3.0` |
+| `!=X.Y` | Outside the series | `!=1.2` matches `1.3.0`, not `1.2.9` |
+| `>X.Y` | Above the series: `>=X.(Y+1).0` | `>1.2` matches `1.3.0`, **not** `1.2.5` |
+| `>=X.Y` | `>=X.Y.0` | `>=1.2` matches `1.2.0` |
+| `<X.Y` | `<X.Y.0` | `<1.2` rejects `1.2.0` |
+| `<=X.Y` | Within or below the series: `<X.(Y+1).0` | `<=3` matches `3.999.0`, not `4.0.0` |
+
+Implementations MUST apply these series semantics. Note that several
+common constraint libraries read `>1.2` as `>1.2.0` (matching `1.2.5`);
+that reading does not conform to this specification.
+
+**Caret and tilde bounds.** The lower bound is always the literal with
+missing components filled with zeros, inclusive. The exclusive upper bound
+is:
+
+- `^`: the leftmost non-zero component is bumped — `^1.4.0` allows
+  `<2.0.0`, `^0.3.1` allows `<0.4.0`, `^0.0.3` allows `<0.0.4`, `^1.2`
+  allows `<2.0.0`. When every given component is zero, the **last given**
+  component is bumped: `^0` allows `<1.0.0`, `^0.0` allows `<0.1.0`,
+  `^0.0.0` allows `<0.0.1`.
+- `~`: patch-level changes when a minor component is given — `~1.4.2`
+  allows `<1.5.0`, `~1.2` allows `<1.3.0`; minor-level changes otherwise —
+  `~1` allows `<2.0.0`.
 
 Resolution rules:
 
@@ -607,6 +654,23 @@ artifacts that do not match this layout. The layout is deliberately
 compatible with generic OCI tooling (`oras push`, `oras pull`, `crane`,
 `skopeo`).
 
+The recipe document layer MUST NOT exceed **4 MiB** (4 194 304 bytes). A
+recipe is a small YAML file; consumers MUST reject artifacts whose layer
+size exceeds this bound (and SHOULD do so before fetching the layer), and
+parsers MAY refuse larger documents outright ([§5](#5-document-structure)).
+
+Two conforming publishers given the same recipe document do **not**
+necessarily produce byte-identical manifests: the compatibility promised
+above means generic tooling participates, and generic tooling is free to
+add manifest annotations (`oras push` records
+`org.opencontainers.image.created`, as shown in the example) or serialize
+fields differently. The **manifest digest** therefore identifies one
+published artifact — it is what gets signed ([§12](#12-signing-and-verification)) —
+but it is NOT a stable identity for the recipe across tools. The recipe's
+semantic identity is the digest of its single document layer
+(`layers[0].digest`): two recipe artifacts carrying the same layer digest
+carry the same recipe.
+
 The `org.opencontainers.image.title` annotation shown above is
 illustrative, not normative. Publishers SHOULD set it to `recipe.yaml`, so
 that a generic `oras pull` writes a sensibly named file; consumers MUST
@@ -629,11 +693,19 @@ Example: `registry.example.com/cookbook/wordpress:6.8.2`.
 - The repository’s last path segment MUST equal the recipe’s
   `metadata.name`, and the tag MUST equal its `metadata.version`. A recipe
   artifact whose content disagrees with its location MUST be rejected.
-  (This is why `metadata.version` excludes semver build metadata, [§6.1](#61-metadata):
-  a version containing `+` would have no publishable tag.)
+  (This is why `metadata.version` excludes semver build metadata and is
+  capped at 128 characters, [§6.1](#61-metadata): a version containing `+`,
+  or longer than an OCI tag may be, would have no publishable tag.)
 - Tags are immutable ([§8](#8-draft-and-cooked-recipes)): re-pointing an
   existing `(name, version)` tag is a policy violation; registries SHOULD be
-  configured to enforce tag immutability where supported.
+  configured to enforce tag immutability where supported. Whether a
+  republication carries "the same content" is decided on the **document
+  layer digest** ([§11.2](#112-artifact-layout)), never on the manifest
+  digest: the same document republished through a different conforming tool
+  may produce a different manifest. When the layer digests match, the
+  publisher MUST treat the publication as already done and MUST NOT
+  re-point the tag (the existing manifest, and any signature over its
+  digest, stays untouched); when they differ, it MUST refuse.
 - Publishers MAY additionally maintain a floating `latest` tag for human
   convenience; automated consumers MUST NOT depend on it.
 
@@ -902,8 +974,8 @@ rejected per [§4.3](#43-strict-validation)) are published in
 
 The schemas validate structure and syntax. The following rules of this
 specification are **not** expressible in JSON Schema and MUST be enforced by
-tooling (the Go SDK shipping with the first tagged release implements all of
-them):
+tooling (the Go SDK in [`recipe/v1alpha1`](recipe/v1alpha1/) implements all
+of them):
 
 - ingredient `name` uniqueness within a recipe ([§6.2](#62-specingredients));
 - the cooked profile: digest present on every ingredient and exact-tag

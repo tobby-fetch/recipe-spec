@@ -29,8 +29,9 @@
           "pattern": "^[a-z0-9]+((\\.|_|__|-+)[a-z0-9]+)*$"
         },
         "description": {
-          "description": "Human-readable description of the zone and its purpose.",
-          "type": "string"
+          "description": "Human-readable description of the zone and its purpose (at most 2048 characters).",
+          "type": "string",
+          "maxLength": 2048
         },
         "labels": {
           "description": "Identifying key/value pairs intended for selection and filtering (Kubernetes label syntax; values at most 63 characters).",
@@ -45,10 +46,11 @@
           }
         },
         "annotations": {
-          "description": "Non-identifying metadata. Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification.",
+          "description": "Non-identifying metadata. Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification. Values are at most 4096 characters.",
           "type": "object",
           "additionalProperties": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 4096
           }
         }
       }

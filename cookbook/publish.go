@@ -13,13 +13,18 @@ import (
 // Artifact is a recipe ready to publish: the two blobs to upload and the
 // manifest to PUT, each with the digest and size a registry will ask for.
 type Artifact struct {
-	// Manifest is the §11.2 image manifest. Its Digest is the artifact's
-	// identity — the argument to `cosign sign`, which signs a digest,
-	// never a tag.
+	// Manifest is the §11.2 image manifest. Its Digest identifies this
+	// published artifact — the argument to `cosign sign`, which signs a
+	// digest, never a tag. It is not, however, the recipe's identity
+	// across tools: another conforming publisher may wrap the same
+	// document in a slightly different manifest (§11.2). That identity is
+	// Document.Digest.
 	Manifest Blob
 	// Config is the empty config blob, uploaded like any other.
 	Config Blob
-	// Document is the recipe YAML, the artifact's single layer.
+	// Document is the recipe YAML, the artifact's single layer. Its
+	// Digest is the recipe's semantic identity (§11.2): the value
+	// [DecideRepublication] compares.
 	Document Blob
 	// Recipe is the parsed document, validated under the cooked profile.
 	Recipe *v1alpha1.Recipe
@@ -75,14 +80,14 @@ func Build(doc []byte, repositoryLastSegment, tag string) (*Artifact, error) {
 	raw, err := json.Marshal(manifest{
 		SchemaVersion: 2,
 		MediaType:     ManifestMediaType,
-		Config:        descriptor{MediaType: config.MediaType, Size: config.Size, Digest: config.Digest},
+		ArtifactType:  ArtifactType,
+		Config:        descriptor{MediaType: config.MediaType, Digest: config.Digest, Size: config.Size},
 		Layers: []descriptor{{
 			MediaType:   document.MediaType,
-			Size:        document.Size,
 			Digest:      document.Digest,
+			Size:        document.Size,
 			Annotations: map[string]string{titleAnnotation: LayerTitle},
 		}},
-		ArtifactType: ArtifactType,
 	})
 	if err != nil {
 		// Unreachable: every field is a string, an int, or a map of
@@ -104,25 +109,42 @@ func Build(doc []byte, repositoryLastSegment, tag string) (*Artifact, error) {
 type Republication int
 
 const (
-	// RepublicationIdentical means the tag already points at this exact
-	// content. Publishing again is a no-op, not a conflict: the same
-	// document published twice is the same artifact, and refusing it
-	// would make every retry an error.
+	// RepublicationIdentical means the tag already carries this exact
+	// recipe document, possibly under a different manifest envelope.
+	// Publishing again is a no-op, not a conflict: the publisher leaves
+	// the tag (and any signature over its manifest) untouched. Refusing
+	// it would make every retry — and every republication through a
+	// different conforming tool — an error.
 	RepublicationIdentical Republication = iota
-	// RepublicationConflict means the tag holds different content. Cooked
-	// recipes are immutable: any change, even one digest, requires a new
-	// metadata.version. The publisher must refuse.
+	// RepublicationConflict means the tag holds a different recipe
+	// document. Cooked recipes are immutable: any change, even one
+	// digest, requires a new metadata.version. The publisher must refuse.
 	RepublicationConflict
 )
 
-// DecideRepublication reports what republishing means, given the digest a
-// tag currently holds and the digest about to be written.
+// DecideRepublication reports what republishing means, given the digest of
+// the recipe document layer the tag currently holds and the digest of the
+// document about to be published.
 //
-// Reading the published digest is a registry operation and stays with the
-// caller; the rule that the two digests imply is the format's, and lives
+// The comparison is deliberately about the document layer, never the
+// manifest. Manifest bytes are not stable across publishing tools —
+// annotations such as org.opencontainers.image.created, field order — so
+// two manifests wrapping the very same recipe document can carry different
+// manifest digests, and comparing those would turn an honest retry through
+// another tool into a spurious immutability conflict. The document layer
+// digest is the recipe's semantic identity (§11.2).
+//
+// Reading the published manifest is a registry operation and stays with
+// the caller: fetch the tag's manifest, run [VerifyManifest] on it, and
+// pass Layout.Document.Digest as published and Artifact.Document.Digest
+// as candidate. The rule the two digests imply is the format's, and lives
 // here so that every implementation refuses — and permits — the same
 // things. Call it only when the tag exists: an absent tag is a plain first
 // publication, which this verdict does not describe.
+//
+// On RepublicationIdentical the publisher MUST NOT re-point the tag: the
+// existing manifest — and any signature already attached to its digest —
+// stays exactly as it is.
 func DecideRepublication(published, candidate string) Republication {
 	if published == candidate {
 		return RepublicationIdentical

@@ -141,3 +141,41 @@ func TestParseNonStringMappingKey(t *testing.T) {
 		t.Fatal("Parse accepted a document with a non-string mapping key")
 	}
 }
+
+// TestParseRejectsOversizedInput pins the §5 size bound: input above
+// MaxParseBytes is refused before any decoding — without the bound, a
+// multi-megabyte YAML file costs hundreds of megabytes of memory just to
+// be told it is "valid".
+func TestParseRejectsOversizedInput(t *testing.T) {
+	// A byte-count violation, not a structural one: the content would be
+	// a perfectly valid recipe if it were smaller.
+	huge := minimalRecipe + "# " + strings.Repeat("x", MaxParseBytes) + "\n"
+	for name, parse := range map[string]func([]byte) (any, error){
+		"Parse":          func(b []byte) (any, error) { return Parse(b) },
+		"ParseRecipe":    func(b []byte) (any, error) { return ParseRecipe(b) },
+		"ParseRetriever": func(b []byte) (any, error) { return ParseRetriever(b) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := parse([]byte(huge))
+			if err == nil {
+				t.Fatal("oversized input accepted")
+			}
+			if !hasError(asList(t, err), RuleDocumentTooLarge, "", "bound") {
+				t.Fatalf("no %s error, got: %v", RuleDocumentTooLarge, err)
+			}
+		})
+	}
+}
+
+// TestParseAcceptsInputAtTheBound: the bound is inclusive — a document of
+// exactly MaxParseBytes parses.
+func TestParseAcceptsInputAtTheBound(t *testing.T) {
+	padding := MaxParseBytes - len(minimalRecipe) - len("# \n")
+	doc := minimalRecipe + "# " + strings.Repeat("x", padding) + "\n"
+	if len(doc) != MaxParseBytes {
+		t.Fatalf("fixture is %d bytes, want exactly %d", len(doc), MaxParseBytes)
+	}
+	if _, err := ParseRecipe([]byte(doc)); err != nil {
+		t.Fatalf("a document of exactly MaxParseBytes must parse: %v", err)
+	}
+}

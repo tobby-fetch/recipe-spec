@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"regexp"
 )
 
 // The media types of the §11.2 artifact layout. The `v1` in the recipe
@@ -47,6 +48,13 @@ const MaxDocumentBytes = 4 << 20
 // "{}", digest sha256:44136fa3…, size 2 (§11.2).
 var emptyConfig = []byte("{}")
 
+// digestPattern is the set of well-formed digests, mirroring the pattern
+// of the recipe schema's digest field: the two registered algorithms with
+// their exact lowercase hexadecimal lengths. A manifest is attacker-supplied
+// input; a descriptor digest that does not match is not something to pass
+// on to a registry client as a blob reference.
+var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$|^sha512:[a-f0-9]{128}$`)
+
 // Blob is one content-addressed payload of the artifact: the bytes, their
 // media type, and the descriptor fields a registry needs to accept them.
 type Blob struct {
@@ -65,23 +73,27 @@ type Blob struct {
 // §11.2 layout uses.
 //
 // The field order is not cosmetic. It reproduces, byte for byte, the JSON
-// that the widely used Go OCI libraries emit for the same content, so that
-// a recipe published by one implementation and republished by another
-// yields the same manifest digest — and therefore the no-op of §8 rather
-// than a spurious immutability conflict.
+// that the OCI reference structs emit for the same content
+// (github.com/opencontainers/image-spec/specs-go/v1, the structs behind
+// oras-go and go-containerregistry), and matches the normative example of
+// §11.2. That said, byte-identical manifests across tools are NOT a
+// guarantee of the format: generic publishers are free to add manifest
+// annotations (oras records org.opencontainers.image.created), so the
+// recipe's stable identity is its document layer digest, not its manifest
+// digest — see [DecideRepublication].
 type manifest struct {
 	SchemaVersion int          `json:"schemaVersion"`
 	MediaType     string       `json:"mediaType"`
+	ArtifactType  string       `json:"artifactType"`
 	Config        descriptor   `json:"config"`
 	Layers        []descriptor `json:"layers"`
-	ArtifactType  string       `json:"artifactType"`
 }
 
 // descriptor mirrors an OCI descriptor, in the same wire order.
 type descriptor struct {
 	MediaType   string            `json:"mediaType"`
-	Size        int64             `json:"size"`
 	Digest      string            `json:"digest"`
+	Size        int64             `json:"size"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
@@ -119,11 +131,16 @@ type Layout struct {
 //
 // It is the reading counterpart of [Build], and deliberately checks the
 // same four things that make an artifact a recipe: the artifactType, an
-// empty config, exactly one layer, and that layer's media type — plus the
-// size bound, so a consumer never starts a download it would have to
-// abandon. It says nothing about the document itself: parsing and
-// validating that is [github.com/tobby-fetch/recipe-spec/recipe/v1alpha1]'s
-// job, once the bytes are in hand and their signature verified.
+// empty config, exactly one layer, and that layer's media type — plus
+// everything a consumer is about to act on: the config must be the one
+// canonical empty config of §11.2 (size 2, the known digest of "{}"),
+// both descriptor digests must be well-formed (a digest is the consumer's
+// next blob request; a malformed one must never reach a registry client),
+// and the layer size must be positive and within [MaxDocumentBytes], so a
+// consumer never starts a download it would have to abandon. It says
+// nothing about the document itself: parsing and validating that is
+// [github.com/tobby-fetch/recipe-spec/recipe/v1alpha1]'s job, once the
+// bytes are in hand and their signature verified.
 func VerifyManifest(manifestBytes []byte) (*Layout, error) {
 	var m manifest
 	if err := json.Unmarshal(manifestBytes, &m); err != nil {
@@ -141,6 +158,18 @@ func VerifyManifest(manifestBytes []byte) (*Layout, error) {
 			Message: fmt.Sprintf("is %q, want the empty config %q", m.Config.MediaType, ConfigMediaType),
 		}
 	}
+	if m.Config.Digest != digestOf(emptyConfig) {
+		return nil, &LayoutError{
+			Field:   "config.digest",
+			Message: fmt.Sprintf("is %q, want the canonical empty config digest %q (§11.2)", m.Config.Digest, digestOf(emptyConfig)),
+		}
+	}
+	if m.Config.Size != int64(len(emptyConfig)) {
+		return nil, &LayoutError{
+			Field:   "config.size",
+			Message: fmt.Sprintf("is %d, want %d — the canonical empty config (§11.2)", m.Config.Size, len(emptyConfig)),
+		}
+	}
 	if len(m.Layers) != 1 {
 		return nil, &LayoutError{
 			Field:   "layers",
@@ -152,6 +181,18 @@ func VerifyManifest(manifestBytes []byte) (*Layout, error) {
 		return nil, &LayoutError{
 			Field:   "layers[0].mediaType",
 			Message: fmt.Sprintf("is %q, want %q", layer.MediaType, ArtifactType),
+		}
+	}
+	if !digestPattern.MatchString(layer.Digest) {
+		return nil, &LayoutError{
+			Field:   "layers[0].digest",
+			Message: fmt.Sprintf("%q is not a well-formed sha256 or sha512 digest", layer.Digest),
+		}
+	}
+	if layer.Size <= 0 {
+		return nil, &LayoutError{
+			Field:   "layers[0].size",
+			Message: fmt.Sprintf("is %d bytes, want a positive size — there is no empty recipe document", layer.Size),
 		}
 	}
 	if layer.Size > MaxDocumentBytes {

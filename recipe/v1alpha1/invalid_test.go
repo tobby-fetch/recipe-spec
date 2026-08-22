@@ -4,11 +4,18 @@
 package v1alpha1
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
+	"gopkg.in/yaml.v3"
+
+	"github.com/tobby-fetch/recipe-spec/schemas"
 )
 
 // invalidCase describes one crafted invalid manifest of testdata/invalid
@@ -61,7 +68,7 @@ var invalidCases = []invalidCase{
 	{file: "digest-sha512-short.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].digest"},
 	{file: "platform-invalid.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].platforms[0]"},
 	{file: "extract-absolute-path.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].extract.paths[0]"},
-	{file: "extract-dotdot-path.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].extract.paths[0]"},
+	{file: "extract-dotdot-path.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].extract.paths[0]", wantMsg: "'..'"},
 	{file: "extract-empty-paths.yaml", wantRule: RuleSchema, wantPath: "spec.ingredients[0].extract.paths"},
 
 	// Ref rules (§6.2): host+repository only, fully qualified.
@@ -103,6 +110,96 @@ func TestInvalidManifestsRejected(t *testing.T) {
 					tc.wantRule, tc.wantPath, tc.wantMsg, err)
 			}
 		})
+	}
+}
+
+// rawSchemaExempt lists the fixtures of testdata/invalid that the raw JSON
+// Schemas alone can NOT reject, with the reason each one is out of a JSON
+// Schema's reach. Everything else in the corpus must be rejected by the
+// published schemas directly — a third-party implementation validating with
+// nothing but schemas/*.json gets that protection, and this list is the
+// exact statement of what it does not get (the §16 rules delegated to
+// tooling).
+var rawSchemaExempt = map[string]string{
+	// Never reaches schema validation: there is no instance to validate.
+	"malformed.yaml": "not well-formed YAML; rejected before any schema sees it",
+	// A stream of two schema-valid documents: the one-document-per-parse
+	// rule is §5 parsing behavior, not document structure.
+	"multiple-documents.yaml": "each document is schema-valid; the single-document rule is §5 parsing",
+	// §16: semantic rules delegated to tooling, inexpressible in JSON
+	// Schema.
+	"duplicate-ingredient-names.yaml":        "ingredient name uniqueness is §6.2 semantics (tooling)",
+	"constraint-invalid.yaml":                "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	"constraint-disjunction.yaml":            "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	"constraint-space-after-operator.yaml":   "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	"constraint-wildcard-midposition.yaml":   "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	"ingredient-version-build-metadata.yaml": "the schema bounds version to a string; OCI tag validity is §9 semantics (tooling)",
+	"retriever-constraint-invalid.yaml":      "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	// The schema pattern stops at 1-5 digits; the TCP range is SDK
+	// semantics (RulePortRange).
+	"ref-port-out-of-range.yaml": "the ref pattern only bounds the port to 1-5 digits; the TCP range is tooling",
+}
+
+// TestInvalidCorpusRejectedByRawSchemas passes every applicable fixture of
+// testdata/invalid straight through the published JSON Schemas — no SDK
+// pipeline, no semantic checks — and requires the rejection. The corpus
+// otherwise only proves that the SDK rejects these documents; this proves
+// the schemas themselves do, which is what every non-Go consumer of
+// schemas/*.json relies on.
+func TestInvalidCorpusRejectedByRawSchemas(t *testing.T) {
+	compile := func(id string, raw []byte) *jsonschema.Schema {
+		doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(raw))
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := jsonschema.NewCompiler()
+		if addErr := c.AddResource(id, doc); addErr != nil {
+			t.Fatal(addErr)
+		}
+		sch, err := c.Compile(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return sch
+	}
+	recipeSch := compile(schemas.RecipeSchemaID, schemas.RecipeSchemaJSON)
+	retrieverSch := compile(schemas.RetrieverSchemaID, schemas.RetrieverSchemaJSON)
+
+	used := make(map[string]bool, len(rawSchemaExempt))
+	for _, tc := range invalidCases {
+		t.Run(tc.file, func(t *testing.T) {
+			if reason, exempt := rawSchemaExempt[tc.file]; exempt {
+				used[tc.file] = true
+				t.Skipf("outside JSON Schema's reach: %s", reason)
+			}
+			var raw any
+			if err := yaml.Unmarshal(readInvalid(t, tc.file), &raw); err != nil {
+				t.Fatalf("fixture does not YAML-decode (add it to rawSchemaExempt if that is the point): %v", err)
+			}
+			jsonBytes, err := json.Marshal(raw)
+			if err != nil {
+				t.Fatalf("fixture is not JSON-representable: %v", err)
+			}
+			var instance any
+			if err := json.Unmarshal(jsonBytes, &instance); err != nil {
+				t.Fatal(err)
+			}
+			// Validate against the schema of the kind the document claims;
+			// anything else (unknown kind, missing kind, non-mapping root)
+			// goes to the Recipe schema, which must reject it anyway.
+			sch, schID := recipeSch, schemas.RecipeSchemaID
+			if root, ok := instance.(map[string]any); ok && root["kind"] == KindRetriever {
+				sch, schID = retrieverSch, schemas.RetrieverSchemaID
+			}
+			if err := sch.Validate(instance); err == nil {
+				t.Errorf("the raw schema %s accepted this document; either the schema lost a rule or the fixture belongs in rawSchemaExempt", schID)
+			}
+		})
+	}
+	for file := range rawSchemaExempt {
+		if !used[file] {
+			t.Errorf("rawSchemaExempt entry %q matches no fixture in the test table (stale exemption)", file)
+		}
 	}
 }
 
