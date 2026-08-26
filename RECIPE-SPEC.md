@@ -273,6 +273,17 @@ A runnable container image, possibly multi-platform.
   registry rejects indexes referencing absent manifests, implementations
   MUST transfer all platforms instead. If `platforms` is absent, all
   platforms MUST be transferred.
+- Each entry is written `os/arch[/variant]`, and the **variant is
+  optional**: an entry that omits it — `linux/arm64` — MUST match an index
+  child of that `os`/`arch` **whatever its variant**, and an entry that
+  names one matches that variant only. This is normative because the
+  obvious implementation is not: rendering an index child back into a
+  label and comparing strings makes the variant mandatory, and registries
+  routinely describe their arm64 child with variant `v8`. `linux/arm64` —
+  the spelling of the example above — would then match nothing, and the
+  author would be told a platform is absent from an index that plainly
+  holds it. An entry that is neither two nor three segments identifies no
+  platform and MUST match nothing rather than widen to a whole OS.
 - Transfers MUST be bit-exact: layers, config, and manifests are copied
   unmodified, so digests remain valid across zones and any upstream image
   signatures remain verifiable.

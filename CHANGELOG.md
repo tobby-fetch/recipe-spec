@@ -11,6 +11,18 @@ module follows Go's module versioning conventions.
 
 ### Changed
 
+- **`§7.1`: an omitted platform variant matches any variant, normatively.**
+  `platforms` entries were documented as `os/arch[/variant]` without
+  saying what an omitted variant means when matching. The obvious
+  implementation — render each index child back into a label and compare
+  strings — silently makes the variant mandatory, and registries publish
+  their arm64 child with variant `v8`, so `linux/arm64` (the spelling of
+  the section's own example) matched nothing and the author was told a
+  platform was absent from an index that plainly held it. Found in the
+  reference implementation, where it had made the `platforms` field
+  unusable for arm64. `§7.1` now states the matching rule, including that
+  a malformed entry matches nothing rather than widening to a whole OS.
+
 - **`§12.3`: the unit of a fail-closed block is the recipe, and it is now
   normative.** Point 4 said "the affected item" without saying what an item
   is, so two conforming implementations could read the same damaged medium
