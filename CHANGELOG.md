@@ -11,6 +11,16 @@ module follows Go's module versioning conventions.
 
 ### Changed
 
+- **`§12.3`: the unit of a fail-closed block is the recipe, and it is now
+  normative.** Point 4 said "the affected item" without saying what an item
+  is, so two conforming implementations could read the same damaged medium
+  and behave differently — one blocking the whole transfer, the other
+  pushing the intact recipes — with no way for an operator to tell which
+  they were looking at. `§12.3` now states that a recipe whose signature or
+  any of whose pinned ingredient digests fails is blocked whole (a delivery
+  that verified in part is not a delivery), and that sibling recipes which
+  verify remain pushable.
+
 - **`cookbook`: manifest serialization now matches the OCI reference
   structs and the `§11.2` example.** The internal manifest struct
   serialized `artifactType` after `layers`, and its descriptors put `size`
