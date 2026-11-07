@@ -11,6 +11,16 @@ module follows Go's module versioning conventions.
 
 ### Changed
 
+- **Toolchain and dependencies brought up to date.** The SDK builds with
+  Go 1.27.3 (`go` directive raised from 1.25.13 — consumers need Go
+  ≥ 1.27.3 to build it) and `golang.org/x/text` v0.43.0. Development
+  and CI tools follow: golangci-lint 2.15.0, govulncheck 1.9.0, Node
+  26.13.0 LTS and pnpm 12.18.0 for the website, whose install-script
+  allowlist moves to `pnpm-workspace.yaml` (`allowBuilds`) because pnpm
+  no longer reads the `pnpm` field of `package.json`. GitHub Actions are
+  re-pinned to their latest releases (`withastro/action` v6,
+  `actions/deploy-pages` v5).
+
 - **`§7.1`: an omitted platform variant matches any variant, normatively.**
   `platforms` entries were documented as `os/arch[/variant]` without
   saying what an omitted variant means when matching. The obvious
