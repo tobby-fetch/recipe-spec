@@ -202,6 +202,7 @@ specification and its reference tooling. Keys defined by this revision:
 | --- | --- |
 | `recipe.tobby.dev/cooked-at` | RFC 3339 timestamp at which the recipe was cooked. |
 | `recipe.tobby.dev/upstream-digest.<ingredient-name>` | Digest of the upstream artifact when the pinned artifact was rewritten by tooling (e.g. Helm chart dependency vendoring, [§7.2](#72-helmchart)). |
+| `recipe.tobby.dev/scan-threshold` | Vulnerability-scan threshold carried by the recipe: a CVSS base score from `0` to `10` written as a decimal string (`"7"`, `"6.5"`), with the meaning of `spec.scanPolicy.threshold` ([§10.4](#104-scan-policy)). It can only **harden** the policy of the zone the recipe enters, never relax it. |
 
 ### 6.2 `spec.ingredients`
 
@@ -550,6 +551,7 @@ version control, not a published versioned artifact).
 | `recipes[].name` | string | yes | Recipe name, as published ([§11.3](#113-naming-and-tags)). |
 | `recipes[].version` | string | yes | Exact recipe version or constraint ([§9](#9-version-constraint-syntax)), resolved against the cookbook’s tags for that recipe. |
 | `recipes[].cookbook` | string | no | Per-entry override of `spec.cookbook`. |
+| `scanPolicy` | object | no | Vulnerability-scan policy of the zone ([§10.4](#104-scan-policy)). |
 
 ### 10.3 Semantics
 
@@ -568,6 +570,60 @@ version control, not a published versioned artifact).
 - Duplicate `name` entries are permitted only with disjoint resolved
   versions (e.g. keeping `6.8.2` while introducing `7.x`); tools SHOULD warn
   when two entries resolve to the same version.
+
+### 10.4 Scan policy
+
+A transfer tool that scans the content it fetches for known vulnerabilities
+evaluates every finding against a policy. A Retriever MAY state the part of
+that policy that belongs to its zone:
+
+```yaml
+spec:
+  scanPolicy:
+    threshold: 7.0                 # findings scoring 7.0 or more violate it
+    exceptions:
+      - id: CVE-2024-12345         # tolerated beyond the threshold
+        justification: The vulnerable parser is disabled in this zone.
+        expires: "2027-03-31T00:00:00Z"
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `threshold` | number | no | CVSS base score, from `0` to `10`, from which a finding violates the policy — **inclusive**: `7.0` refuses every finding scoring `7.0` or more. |
+| `exceptions` | array | no | Vulnerabilities tolerated beyond the threshold, listed by hand. |
+| `exceptions[].id` | string | yes | CVE identifier (`CVE-<year>-<number>`). Unique within the document. |
+| `exceptions[].justification` | string | no | Why the vulnerability is tolerated in this zone (at most 1024 characters). |
+| `exceptions[].expires` | string | no | RFC 3339 timestamp after which the exception no longer applies. |
+
+The document states **what violates** the policy, not what happens then:
+whether a violation blocks the transfer or is only reported is the consuming
+tool's own configuration. A consumer that scans combines three levels — its
+own instance settings, the Retriever of the zone, and the
+`recipe.tobby.dev/scan-threshold` annotation of each recipe
+([§6.1](#61-metadata)) — as follows:
+
+1. **Threshold.** The most specific level that sets one wins: recipe, then
+   Retriever, then instance. A Retriever MAY raise or lower the instance
+   value. A recipe MAY only **lower** the value that results from the other
+   two: a consumer MUST ignore a recipe threshold higher than it, and SHOULD
+   report that it did. A recipe author therefore never relaxes the policy of
+   a zone their recipe enters.
+2. **Exceptions** are cumulative: the instance's and the Retriever's lists
+   are added together. A recipe carries none — an exception relaxes, and a
+   recipe can only harden.
+3. **Expiry.** An exception whose `expires` lies in the past at evaluation
+   time does not apply, and SHOULD be reported as expired.
+4. **Findings without a CVSS score** are placed at the lower bound of their
+   qualitative severity band: `LOW` 0.1, `MEDIUM` 4.0, `HIGH` 7.0, `CRITICAL`
+   9.0 (the CVSS v3 bands). When several sources score one finding, the
+   highest score counts. A finding of unknown severity has no place on that
+   scale: it is not compared with the threshold, and a consumer MUST report
+   it as unscored — never drop it, and never let it decide a verdict
+   without saying so.
+
+These rules leave the mode of enforcement, the scanner, and its database to
+the tool; they fix only how the levels combine, so that the same zone
+document reads the same way whichever tool consumes it.
 
 ## 11. The cookbook
 
@@ -923,4 +979,6 @@ them):
 - the cooked profile: digest present on every ingredient and exact-tag
   versions only ([§8](#8-draft-and-cooked-recipes));
 - constraint-expression grammar beyond surface syntax ([§9](#9-version-constraint-syntax));
-- name/tag consistency with the publication location ([§11.3](#113-naming-and-tags)).
+- name/tag consistency with the publication location ([§11.3](#113-naming-and-tags));
+- scan-policy exception identifiers unique within a retriever, and `expires`
+  a valid RFC 3339 timestamp ([§10.4](#104-scan-policy)).

@@ -1,0 +1,13 @@
+apiVersion: recipe.tobby.dev/v1alpha1
+kind: Recipe
+metadata:
+  name: wordpress
+  version: "6.8.2"
+  annotations:
+    recipe.tobby.dev/scan-threshold: "high"
+spec:
+  ingredients:
+    - name: wordpress
+      kind: ContainerImage
+      ref: docker.io/bitnami/wordpress
+      version: "6.8.2"

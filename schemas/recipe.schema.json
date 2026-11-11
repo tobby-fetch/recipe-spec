@@ -54,6 +54,13 @@
         "annotations": {
           "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification. Values are at most 4096 characters.",
           "type": "object",
+          "properties": {
+            "recipe.tobby.dev/scan-threshold": {
+              "description": "Vulnerability-scan threshold carried by the recipe (RECIPE-SPEC.md §6.1, §10.4): a CVSS base score from 0 to 10, written as a decimal string ('7', '6.5'). It can only lower the threshold in effect for the zone, never raise it.",
+              "type": "string",
+              "pattern": "^(10(\\.0+)?|[0-9](\\.[0-9]+)?)$"
+            }
+          },
           "additionalProperties": {
             "type": "string",
             "maxLength": 4096

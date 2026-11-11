@@ -91,6 +91,13 @@ var invalidCases = []invalidCase{
 	{file: "retriever-metadata-version.yaml", wantRule: RuleSchema, wantPath: "metadata", wantMsg: "version"},
 	{file: "retriever-unknown-field-spec.yaml", wantRule: RuleSchema, wantPath: "spec", wantMsg: "mode"},
 	{file: "retriever-constraint-invalid.yaml", wantRule: RuleVersionSyntax, wantPath: "spec.recipes[0].version", wantMsg: "||"},
+
+	// Scan policy (§10.4) and the recipe-carried threshold (§6.1).
+	{file: "retriever-scan-threshold-range.yaml", wantRule: RuleSchema, wantPath: "spec.scanPolicy.threshold"},
+	{file: "retriever-scan-exception-id.yaml", wantRule: RuleSchema, wantPath: "spec.scanPolicy.exceptions[0].id"},
+	{file: "retriever-scan-exception-duplicate.yaml", wantRule: RuleScanExceptionDuplicate, wantPath: "spec.scanPolicy.exceptions[1].id", wantMsg: "CVE-2024-12345"},
+	{file: "retriever-scan-exception-expires.yaml", wantRule: RuleScanExceptionExpires, wantPath: "spec.scanPolicy.exceptions[0].expires", wantMsg: "RFC 3339"},
+	{file: "recipe-scan-threshold-annotation.yaml", wantRule: RuleSchema, wantPath: "metadata.annotations"},
 }
 
 func TestInvalidManifestsRejected(t *testing.T) {
@@ -135,6 +142,10 @@ var rawSchemaExempt = map[string]string{
 	"constraint-wildcard-midposition.yaml":   "constraint grammar beyond surface syntax is §9 semantics (tooling)",
 	"ingredient-version-build-metadata.yaml": "the schema bounds version to a string; OCI tag validity is §9 semantics (tooling)",
 	"retriever-constraint-invalid.yaml":      "constraint grammar beyond surface syntax is §9 semantics (tooling)",
+	// §10.4: identifier uniqueness across objects, and "format" being an
+	// annotation rather than an assertion in JSON Schema 2020-12.
+	"retriever-scan-exception-duplicate.yaml": "exception identifier uniqueness is §10.4 semantics (tooling)",
+	"retriever-scan-exception-expires.yaml":   "the schema's date-time format is not asserted by 2020-12 validators; the RFC 3339 check is §10.4 semantics (tooling)",
 	// The schema pattern stops at 1-5 digits; the TCP range is SDK
 	// semantics (RulePortRange).
 	"ref-port-out-of-range.yaml": "the ref pattern only bounds the port to 1-5 digits; the TCP range is tooling",

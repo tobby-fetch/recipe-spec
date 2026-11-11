@@ -56,6 +56,12 @@ const (
 	// RulePublishLocation: metadata does not agree with the publication
 	// location (repository last path segment and tag, §11.3).
 	RulePublishLocation = "publish-location"
+	// RuleScanExceptionDuplicate: two scan-policy exceptions of one
+	// retriever name the same vulnerability (§10.4).
+	RuleScanExceptionDuplicate = "scan-exception-duplicate"
+	// RuleScanExceptionExpires: a scan-policy exception's expires is not
+	// an RFC 3339 timestamp (§10.4).
+	RuleScanExceptionExpires = "scan-exception-expires"
 	// RuleInternal: the SDK detected an internal inconsistency (for
 	// example between the embedded schemas and the Go types). This should
 	// never happen; please report it.
