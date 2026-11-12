@@ -73,11 +73,58 @@
           "items": {
             "$ref": "#/$defs/recipeSelector"
           }
+        },
+        "scanPolicy": {
+          "$ref": "#/$defs/scanPolicy"
         }
       }
     }
   },
   "$defs": {
+    "scanPolicy": {
+      "description": "Optional vulnerability-scan policy of the zone (RECIPE-SPEC.md §10.4). It states what violates the zone's policy; whether a violation blocks or only warns is decided by the consuming tool's instance configuration. Absent fields inherit the tool's instance-level settings.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "threshold": {
+          "description": "CVSS base score from which a finding violates the policy, inclusive: 7.0 refuses every finding scoring 7.0 or more. Overrides the tool's instance-level threshold, in either direction; a recipe may only lower the effective value (§6.1, recipe.tobby.dev/scan-threshold).",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "exceptions": {
+          "description": "Vulnerabilities tolerated beyond the threshold, listed by hand. Added to the tool's instance-level exceptions, never replacing them.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scanException"
+          }
+        }
+      }
+    },
+    "scanException": {
+      "description": "One tolerated vulnerability, by identifier (RECIPE-SPEC.md §10.4).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "description": "CVE identifier of the tolerated vulnerability, e.g. 'CVE-2024-12345'. Unique within one document.",
+          "type": "string",
+          "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"
+        },
+        "justification": {
+          "description": "Why the vulnerability is tolerated in this zone (at most 1024 characters). Optional in this revision.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "expires": {
+          "description": "RFC 3339 timestamp after which the exception no longer applies. Optional in this revision.",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "recipeSelector": {
       "description": "Selection of one recipe (by name) at an exact version or the highest version matching a constraint.",
       "type": "object",

@@ -9,6 +9,27 @@ module follows Go's module versioning conventions.
 
 ## [Unreleased]
 
+### Added
+
+- **`§10.4`: a Retriever may state its zone's vulnerability-scan policy.**
+  `spec.scanPolicy` carries a `threshold` — the CVSS base score from which
+  a finding violates the policy, inclusive — and a list of `exceptions`
+  by CVE identifier, each with an optional `justification` and `expires`.
+  The document says what violates the policy, never whether a violation
+  blocks: that stays the consuming tool's configuration. The section fixes
+  how the levels combine — the most specific threshold wins, exceptions
+  add up, an expired exception no longer applies, a finding with no CVSS
+  score sits at the lower bound of its severity band and an unknown one
+  is reported as unscored. Additive: a Retriever without the field reads
+  exactly as before. The SDK gains `RetrieverSpec.ScanPolicy`,
+  `ScanPolicy` and `ScanException`, and two tooling rules the schema
+  cannot state (`scan-exception-duplicate`, `scan-exception-expires`).
+- **`§6.1`: reserved annotation `recipe.tobby.dev/scan-threshold`.** A
+  recipe may carry its own threshold, as a decimal string from `0` to
+  `10`, validated by the published schema. It can only lower the
+  threshold in effect for the zone the recipe enters: a recipe author
+  never relaxes a zone. Constant `AnnotationScanThreshold` in the SDK.
+
 ### Changed
 
 - **Toolchain and dependencies brought up to date.** The SDK builds with

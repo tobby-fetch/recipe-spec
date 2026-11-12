@@ -179,3 +179,64 @@ func TestParseAcceptsInputAtTheBound(t *testing.T) {
 		t.Fatalf("a document of exactly MaxParseBytes must parse: %v", err)
 	}
 }
+
+// TestParseScanPolicy locks the §10.4 additions on the accepting side: a
+// retriever states its threshold and exceptions, an unquoted YAML
+// timestamp reads as the RFC 3339 string it denotes, and a recipe carries
+// its own threshold as the reserved annotation of §6.1.
+func TestParseScanPolicy(t *testing.T) {
+	r, err := ParseRetriever([]byte(`apiVersion: recipe.tobby.dev/v1alpha1
+kind: Retriever
+metadata:
+  name: restricted-zone
+spec:
+  cookbook: registry.example.com/cookbook
+  recipes:
+    - name: wordpress
+      version: "6.8.2"
+  scanPolicy:
+    threshold: 7.0
+    exceptions:
+      - id: CVE-2024-12345
+        justification: The vulnerable parser is disabled in this zone.
+        expires: 2027-03-31T00:00:00Z
+      - id: CVE-2025-0001
+`))
+	if err != nil {
+		t.Fatalf("ParseRetriever: %v", err)
+	}
+	p := r.Spec.ScanPolicy
+	if p == nil || p.Threshold == nil || *p.Threshold != 7.0 {
+		t.Fatalf("scanPolicy = %+v, want threshold 7.0", p)
+	}
+	if len(p.Exceptions) != 2 || p.Exceptions[0].ID != "CVE-2024-12345" ||
+		p.Exceptions[0].Expires != "2027-03-31T00:00:00Z" || p.Exceptions[1].Justification != "" {
+		t.Errorf("exceptions = %+v", p.Exceptions)
+	}
+
+	none, err := ParseRetriever([]byte(`apiVersion: recipe.tobby.dev/v1alpha1
+kind: Retriever
+metadata:
+  name: restricted-zone
+spec:
+  cookbook: registry.example.com/cookbook
+  recipes:
+    - name: wordpress
+      version: "6.8.2"
+`))
+	if err != nil {
+		t.Fatalf("ParseRetriever without a policy: %v", err)
+	}
+	if none.Spec.ScanPolicy != nil {
+		t.Errorf("absent scanPolicy decoded as %+v, want nil (inherit the instance settings)", none.Spec.ScanPolicy)
+	}
+
+	rec, err := ParseRecipe([]byte(strings.Replace(minimalRecipe, "  version: 1.0.0\n",
+		"  version: 1.0.0\n  annotations:\n    recipe.tobby.dev/scan-threshold: \"6.5\"\n", 1)))
+	if err != nil {
+		t.Fatalf("ParseRecipe with a scan threshold: %v", err)
+	}
+	if got := rec.Metadata.Annotations[AnnotationScanThreshold]; got != "6.5" {
+		t.Errorf("annotation = %q, want 6.5", got)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Profile selects the validation profile of RECIPE-SPEC.md §8: a recipe is
@@ -170,6 +171,41 @@ func retrieverSemanticErrors(r *Retriever) ErrorList {
 		}
 		if sel.Cookbook != "" {
 			errs = append(errs, portRangeError(sel.Cookbook, fmt.Sprintf("spec.recipes[%d].cookbook", i))...)
+		}
+	}
+	errs = append(errs, scanPolicyErrors(r.Spec.ScanPolicy)...)
+	return errs
+}
+
+// scanPolicyErrors implements the §10.4 rules a JSON Schema cannot state:
+// exception identifiers are unique within the document — two entries for
+// one CVE with different justifications or expiries would leave the
+// consumer to guess which one is meant — and expires, when present, is an
+// RFC 3339 timestamp (the schema's "format" is an annotation, not an
+// assertion, in JSON Schema 2020-12).
+func scanPolicyErrors(p *ScanPolicy) ErrorList {
+	if p == nil {
+		return nil
+	}
+	var errs ErrorList
+	seen := make(map[string]int, len(p.Exceptions))
+	for i, ex := range p.Exceptions {
+		path := fmt.Sprintf("spec.scanPolicy.exceptions[%d]", i)
+		if first, dup := seen[ex.ID]; dup && ex.ID != "" {
+			errs = append(errs, &FieldError{
+				Path: path + ".id", Rule: RuleScanExceptionDuplicate,
+				Message: fmt.Sprintf("%s is already listed by spec.scanPolicy.exceptions[%d]; an exception names each vulnerability once (§10.4)", ex.ID, first),
+			})
+		} else {
+			seen[ex.ID] = i
+		}
+		if ex.Expires != "" {
+			if _, err := time.Parse(time.RFC3339, ex.Expires); err != nil {
+				errs = append(errs, &FieldError{
+					Path: path + ".expires", Rule: RuleScanExceptionExpires,
+					Message: fmt.Sprintf("expires %q is not an RFC 3339 timestamp such as 2027-03-31T00:00:00Z (§10.4)", ex.Expires),
+				})
+			}
 		}
 	}
 	return errs

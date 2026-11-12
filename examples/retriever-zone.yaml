@@ -47,3 +47,15 @@ spec:
     - name: site-config
       version: "~2.3.0"
       cookbook: registry.tools.example.com/cookbook
+
+  # Optional vulnerability-scan policy of the zone (§10.4). It states what
+  # violates the policy; whether a violation blocks or only warns is the
+  # transfer tool's own configuration. Findings scoring 7.0 or more
+  # violate it, except the one tolerated below.
+  scanPolicy:
+    threshold: 7.0
+    exceptions:
+      - id: CVE-2024-12345
+        justification: >-
+          The vulnerable XML parser is disabled in this zone's deployment.
+        expires: "2027-03-31T00:00:00Z"

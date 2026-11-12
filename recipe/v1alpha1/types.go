@@ -114,6 +114,13 @@ const (
 	// records the digest of the upstream artifact when the pinned artifact
 	// was rewritten by tooling (e.g. Helm chart dependency vendoring §7.2).
 	AnnotationUpstreamDigestPrefix = "recipe.tobby.dev/upstream-digest."
+	// AnnotationScanThreshold carries a vulnerability-scan threshold on a
+	// recipe (§6.1, §10.4): a CVSS base score from 0 to 10 written as a
+	// decimal string. It is a setting, not a selection criterion, and it
+	// can only HARDEN the policy of the zone the recipe enters — a
+	// consumer applies it only when it is lower than the threshold already
+	// in effect, so a third-party recipe author cannot relax a zone.
+	AnnotationScanThreshold = "recipe.tobby.dev/scan-threshold"
 )
 
 // RecipeSpec is the content of a Recipe (RECIPE-SPEC.md §6.2).
@@ -187,6 +194,41 @@ type RetrieverSpec struct {
 	// Recipes is the non-empty list of desired recipes. Each entry
 	// resolves independently against its cookbook's tags.
 	Recipes []RecipeSelector `json:"recipes" yaml:"recipes"`
+	// ScanPolicy optionally states the zone's vulnerability-scan policy
+	// (§10.4). Nil means the consuming tool's instance settings apply
+	// unchanged.
+	ScanPolicy *ScanPolicy `json:"scanPolicy,omitempty" yaml:"scanPolicy,omitempty"`
+}
+
+// ScanPolicy is the vulnerability-scan policy a Retriever states for its
+// zone (RECIPE-SPEC.md §10.4). It says what VIOLATES the policy; whether a
+// violation blocks the transfer or only warns is the consuming tool's
+// instance configuration, not the zone document's.
+type ScanPolicy struct {
+	// Threshold is the CVSS base score from which a finding violates the
+	// policy, inclusive (7.0 refuses every finding scoring 7.0 or more),
+	// from 0 to 10. Nil inherits the tool's instance-level threshold. It
+	// overrides that threshold in either direction; a recipe may then only
+	// lower the result (AnnotationScanThreshold).
+	Threshold *float64 `json:"threshold,omitempty" yaml:"threshold,omitempty"`
+	// Exceptions lists vulnerabilities tolerated beyond the threshold.
+	// They are ADDED to the tool's instance-level exceptions, never
+	// substituted for them.
+	Exceptions []ScanException `json:"exceptions,omitempty" yaml:"exceptions,omitempty"`
+}
+
+// ScanException tolerates one vulnerability beyond the threshold
+// (RECIPE-SPEC.md §10.4).
+type ScanException struct {
+	// ID is the CVE identifier ("CVE-2024-12345"), unique within one
+	// document.
+	ID string `json:"id" yaml:"id"`
+	// Justification says why the vulnerability is tolerated in this zone.
+	// Optional in this revision.
+	Justification string `json:"justification,omitempty" yaml:"justification,omitempty"`
+	// Expires is an RFC 3339 timestamp after which the exception no longer
+	// applies. Optional in this revision.
+	Expires string `json:"expires,omitempty" yaml:"expires,omitempty"`
 }
 
 // RecipeSelector selects one recipe (by name) at an exact version or at the
