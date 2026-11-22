@@ -25,7 +25,7 @@ import (
 const lintUsage = `usage: recipe lint [-profile draft|cooked] [-output text|json] <file|dir>...
 
 Parses and validates every given document against the Recipe specification
-(apiVersion recipe.tobby.dev/v1alpha1), via the recipe-spec Go SDK. A
+(apiVersion recipe.tobbyfetch.dev/v1alpha1), via the recipe-spec Go SDK. A
 directory argument stands for every *.yaml and *.yml file under it,
 recursively. Multi-document streams ("---" separators) are accepted; each
 document is validated independently (§5).

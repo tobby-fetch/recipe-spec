@@ -69,7 +69,7 @@ func TestValidateHandBuiltViolations(t *testing.T) {
 	}{
 		{
 			name:     "wrong apiVersion",
-			mutate:   func(r *Recipe) { r.APIVersion = "recipe.tobby.dev/v9" },
+			mutate:   func(r *Recipe) { r.APIVersion = "recipe.tobbyfetch.dev/v9" },
 			wantRule: RuleSchema, wantPath: "apiVersion",
 		},
 		{

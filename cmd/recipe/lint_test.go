@@ -22,7 +22,7 @@ const (
 )
 
 // validRecipe is a minimal valid draft recipe for generated fixtures.
-const validRecipe = `apiVersion: recipe.tobby.dev/v1alpha1
+const validRecipe = `apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: hello

@@ -12,7 +12,7 @@
 # roots, then the recipe artifact AND all its ingredients are transferred.
 # Anything in the zone not reachable from this list is eligible for external
 # mark-and-sweep cleanup.
-apiVersion: recipe.tobby.dev/v1alpha1
+apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Retriever
 metadata:
   name: restricted-zone
@@ -20,7 +20,7 @@ metadata:
     Desired recipe set for the restricted zone, resolved from the production
     cookbook.
   labels:
-    recipe.tobby.dev/zone: restricted
+    recipe.tobbyfetch.dev/zone: restricted
 spec:
   # Default cookbook (hostname + repository namespace; credentials are
   # supplied out of band in kubernetes.io/dockerconfigjson format).
