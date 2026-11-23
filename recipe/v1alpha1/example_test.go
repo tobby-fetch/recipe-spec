@@ -13,7 +13,7 @@ import (
 // ExampleParseRecipe parses a draft recipe and checks whether it is ready
 // for publication (cooked profile).
 func ExampleParseRecipe() {
-	doc := []byte(`apiVersion: recipe.tobby.dev/v1alpha1
+	doc := []byte(`apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: hello
@@ -68,7 +68,7 @@ func ExampleParseConstraint() {
 
 // ExampleParse detects the document kind.
 func ExampleParse() {
-	doc := []byte(`apiVersion: recipe.tobby.dev/v1alpha1
+	doc := []byte(`apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Retriever
 metadata:
   name: restricted-zone

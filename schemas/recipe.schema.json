@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tobby.dev/schemas/v1alpha1/recipe.schema.json",
+  "$id": "https://tobbyfetch.dev/schemas/v1alpha1/recipe.schema.json",
   "title": "Recipe",
   "description": "A declarative, signable, fully pinnable description of a set of OCI artifacts (ingredients) that together make up a software delivery. See RECIPE-SPEC.md for normative semantics. Rules not expressible in JSON Schema (ingredient name uniqueness, cooked profile, publication-location consistency) are enforced by tooling.",
   "type": "object",
@@ -8,8 +8,8 @@
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "properties": {
     "apiVersion": {
-      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobby.dev/v1alpha1'.",
-      "const": "recipe.tobby.dev/v1alpha1"
+      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobbyfetch.dev/v1alpha1'.",
+      "const": "recipe.tobbyfetch.dev/v1alpha1"
     },
     "kind": {
       "description": "Document kind. Always 'Recipe' for this schema.",
@@ -52,10 +52,10 @@
           }
         },
         "annotations": {
-          "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification. Values are at most 4096 characters.",
+          "description": "Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobbyfetch.dev/' are reserved by the specification. Values are at most 4096 characters.",
           "type": "object",
           "properties": {
-            "recipe.tobby.dev/scan-threshold": {
+            "recipe.tobbyfetch.dev/scan-threshold": {
               "description": "Vulnerability-scan threshold carried by the recipe (RECIPE-SPEC.md §6.1, §10.4): a CVSS base score from 0 to 10, written as a decimal string ('7', '6.5'). It can only lower the threshold in effect for the zone, never raise it.",
               "type": "string",
               "pattern": "^(10(\\.0+)?|[0-9](\\.[0-9]+)?)$"
@@ -131,7 +131,7 @@
           }
         },
         "vendorDependencies": {
-          "description": "HelmChart only. When true, chart dependencies are resolved and embedded at cook time, producing a new artifact whose digest is recorded (the upstream digest should be kept in the 'recipe.tobby.dev/upstream-digest.<name>' annotation). Default false: the chart is transferred bit-for-bit and upstream signatures remain verifiable.",
+          "description": "HelmChart only. When true, chart dependencies are resolved and embedded at cook time, producing a new artifact whose digest is recorded (the upstream digest should be kept in the 'recipe.tobbyfetch.dev/upstream-digest.<name>' annotation). Default false: the chart is transferred bit-for-bit and upstream signatures remain verifiable.",
           "type": "boolean",
           "default": false
         },

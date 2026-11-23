@@ -4,7 +4,7 @@
 // Command recipe is the command-line companion of the recipe-spec Go SDK.
 //
 // Its only subcommand today is lint, which parses and validates Recipe and
-// Retriever documents (RECIPE-SPEC.md, apiVersion recipe.tobby.dev/v1alpha1)
+// Retriever documents (RECIPE-SPEC.md, apiVersion recipe.tobbyfetch.dev/v1alpha1)
 // through the SDK — the command adds file handling and reporting, never
 // validation logic of its own.
 //

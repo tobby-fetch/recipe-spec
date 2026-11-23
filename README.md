@@ -17,7 +17,7 @@ read, validate, and emit Recipes:
 
 | Content | Where |
 |---|---|
-| **Specification** of the `Recipe` and `Retriever` kinds (`recipe.tobby.dev/v1alpha1`, draft) | [RECIPE-SPEC.md](RECIPE-SPEC.md) |
+| **Specification** of the `Recipe` and `Retriever` kinds (`recipe.tobbyfetch.dev/v1alpha1`, draft) | [RECIPE-SPEC.md](RECIPE-SPEC.md) |
 | **JSON Schemas** (draft 2020-12, strict — unknown fields rejected) | [`schemas/`](schemas/) |
 | **Examples** (cooked and draft recipes, a zone Retriever) | [`examples/`](examples/) |
 | **Go SDK** (parsing, validation, serialization) | [`recipe/v1alpha1`](recipe/v1alpha1/) — see [Go SDK](#go-sdk) |

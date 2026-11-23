@@ -1,7 +1,7 @@
 # Tobby Recipe Specification
 
 **Version:** `v1alpha1` (draft)
-**API group:** `recipe.tobby.dev`
+**API group:** `recipe.tobbyfetch.dev`
 **Status:** Work in progress — breaking changes possible until `v1beta1`
 **License:** Apache-2.0
 
@@ -124,7 +124,7 @@ Every document declares its schema through the `apiVersion` field, following
 the Kubernetes convention `<group>/<version>`:
 
 ```yaml
-apiVersion: recipe.tobby.dev/v1alpha1
+apiVersion: recipe.tobbyfetch.dev/v1alpha1
 ```
 
 The planned lifecycle is `v1alpha1` → `v1beta1` → `v1`. The in-document
@@ -177,7 +177,7 @@ document as sole layer); the schema of the document itself is versioned by
 Every document has four top-level fields, in the Kubernetes style:
 
 ```yaml
-apiVersion: recipe.tobby.dev/v1alpha1   # REQUIRED — schema version (§4)
+apiVersion: recipe.tobbyfetch.dev/v1alpha1   # REQUIRED — schema version (§4)
 kind: Recipe                            # REQUIRED — "Recipe" or "Retriever"
 metadata: {}                            # REQUIRED — identity and metadata
 spec: {}                                # REQUIRED — kind-specific content
@@ -193,16 +193,16 @@ spec: {}                                # REQUIRED — kind-specific content
 | `version` | string | yes | Version of the **described application** (not of any single ingredient). MUST be valid [Semantic Versioning 2.0.0](https://semver.org) **without build metadata** — `+` is not a legal OCI tag character ([§11.3](#113-naming-and-tags)). Becomes the OCI tag on publication. |
 | `description` | string | no | Human-readable, one-paragraph description. |
 | `labels` | map[string]string | no | Identifying key/value pairs intended for selection and filtering. Keys and values follow Kubernetes label syntax (values ≤ 63 characters). |
-| `annotations` | map[string]string | no | Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys SHOULD be namespaced with a DNS prefix (e.g. `recipe.tobby.dev/…`). |
+| `annotations` | map[string]string | no | Non-identifying metadata (provenance URLs, timestamps, tooling data). Keys SHOULD be namespaced with a DNS prefix (e.g. `recipe.tobbyfetch.dev/…`). |
 
-Annotation keys under the `recipe.tobby.dev/` prefix are reserved for this
+Annotation keys under the `recipe.tobbyfetch.dev/` prefix are reserved for this
 specification and its reference tooling. Keys defined by this revision:
 
 | Annotation | Meaning |
 | --- | --- |
-| `recipe.tobby.dev/cooked-at` | RFC 3339 timestamp at which the recipe was cooked. |
-| `recipe.tobby.dev/upstream-digest.<ingredient-name>` | Digest of the upstream artifact when the pinned artifact was rewritten by tooling (e.g. Helm chart dependency vendoring, [§7.2](#72-helmchart)). |
-| `recipe.tobby.dev/scan-threshold` | Vulnerability-scan threshold carried by the recipe: a CVSS base score from `0` to `10` written as a decimal string (`"7"`, `"6.5"`), with the meaning of `spec.scanPolicy.threshold` ([§10.4](#104-scan-policy)). It can only **harden** the policy of the zone the recipe enters, never relax it. |
+| `recipe.tobbyfetch.dev/cooked-at` | RFC 3339 timestamp at which the recipe was cooked. |
+| `recipe.tobbyfetch.dev/upstream-digest.<ingredient-name>` | Digest of the upstream artifact when the pinned artifact was rewritten by tooling (e.g. Helm chart dependency vendoring, [§7.2](#72-helmchart)). |
+| `recipe.tobbyfetch.dev/scan-threshold` | Vulnerability-scan threshold carried by the recipe: a CVSS base score from `0` to `10` written as a decimal string (`"7"`, `"6.5"`), with the meaning of `spec.scanPolicy.threshold` ([§10.4](#104-scan-policy)). It can only **harden** the policy of the zone the recipe enters, never relax it. |
 
 ### 6.2 `spec.ingredients`
 
@@ -241,7 +241,7 @@ Rules for `digest`:
 ### 6.3 Minimal example
 
 ```yaml
-apiVersion: recipe.tobby.dev/v1alpha1
+apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: hello
@@ -328,7 +328,7 @@ Semantics:
   - upstream chart signatures and provenance no longer apply to the vendored
     artifact;
   - the cooking process SHOULD record the upstream digest in the recipe
-    annotation `recipe.tobby.dev/upstream-digest.<ingredient-name>` for
+    annotation `recipe.tobbyfetch.dev/upstream-digest.<ingredient-name>` for
     traceability.
 - A chart never implies its container images. Images referenced by chart
   values MUST be listed explicitly as `ContainerImage` ingredients: transfers
@@ -521,7 +521,7 @@ resolves it once per synchronization onto removable media.
 ### 10.1 Structure
 
 ```yaml
-apiVersion: recipe.tobby.dev/v1alpha1
+apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Retriever
 metadata:
   name: restricted-zone            # conventionally, the zone name
@@ -599,7 +599,7 @@ The document states **what violates** the policy, not what happens then:
 whether a violation blocks the transfer or is only reported is the consuming
 tool's own configuration. A consumer that scans combines three levels — its
 own instance settings, the Retriever of the zone, and the
-`recipe.tobby.dev/scan-threshold` annotation of each recipe
+`recipe.tobbyfetch.dev/scan-threshold` annotation of each recipe
 ([§6.1](#61-metadata)) — as follows:
 
 1. **Threshold.** The most specific level that sets one wins: recipe, then

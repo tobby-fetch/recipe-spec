@@ -33,7 +33,7 @@ output if available.
 ## Version and environment
 
 - `recipe-spec` module version / commit:
-- `apiVersion` of the recipe or retriever involved (e.g. `recipe.tobby.dev/v1alpha1`):
+- `apiVersion` of the recipe or retriever involved (e.g. `recipe.tobbyfetch.dev/v1alpha1`):
 - Go version (if SDK-related):
 
 ## Additional context

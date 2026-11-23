@@ -35,7 +35,7 @@ var invalidCases = []invalidCase{
 	{file: "root-sequence.yaml", wantRule: RuleDocumentRoot},
 
 	// Envelope failures (§4.2, §5).
-	{file: "apiversion-unknown.yaml", wantRule: RuleAPIVersion, wantPath: "apiVersion", wantMsg: "recipe.tobby.dev/v2"},
+	{file: "apiversion-unknown.yaml", wantRule: RuleAPIVersion, wantPath: "apiVersion", wantMsg: "recipe.tobbyfetch.dev/v2"},
 	{file: "apiversion-missing.yaml", wantRule: RuleAPIVersion, wantPath: "apiVersion", wantMsg: "missing"},
 	{file: "kind-unknown.yaml", wantRule: RuleKind, wantPath: "kind", wantMsg: "Cookbook"},
 	{file: "kind-missing.yaml", wantRule: RuleKind, wantPath: "kind", wantMsg: "missing"},

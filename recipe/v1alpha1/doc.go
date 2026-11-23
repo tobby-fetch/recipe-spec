@@ -2,7 +2,7 @@
 // Copyright © 2026 infraBuilder SASU and contributors
 
 // Package v1alpha1 implements parsing and validation of Recipe and
-// Retriever documents at apiVersion recipe.tobby.dev/v1alpha1, as defined
+// Retriever documents at apiVersion recipe.tobbyfetch.dev/v1alpha1, as defined
 // by RECIPE-SPEC.md in this repository.
 //
 // # Parsing

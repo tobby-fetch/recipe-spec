@@ -15,7 +15,7 @@ import (
 
 // cookedDoc is a minimal valid cooked recipe: one fully pinned ingredient,
 // published at "demo:1.0.0".
-const cookedDoc = `apiVersion: recipe.tobby.dev/v1alpha1
+const cookedDoc = `apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: demo

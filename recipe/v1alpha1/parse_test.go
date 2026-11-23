@@ -9,7 +9,7 @@ import (
 )
 
 // minimalRecipe is the minimal example of RECIPE-SPEC.md §6.3.
-const minimalRecipe = `apiVersion: recipe.tobby.dev/v1alpha1
+const minimalRecipe = `apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: hello
@@ -53,7 +53,7 @@ func TestParseMinimalRecipe(t *testing.T) {
 // TestParseJSONInput: JSON is a YAML subset, so JSON documents parse too.
 func TestParseJSONInput(t *testing.T) {
 	doc := `{
-	  "apiVersion": "recipe.tobby.dev/v1alpha1",
+	  "apiVersion": "recipe.tobbyfetch.dev/v1alpha1",
 	  "kind": "Recipe",
 	  "metadata": {"name": "hello", "version": "1.0.0"},
 	  "spec": {"ingredients": [
@@ -108,7 +108,7 @@ func TestParseDocumentLevelErrors(t *testing.T) {
 // TestParseReportsAllViolations: the SDK aggregates every violation instead
 // of stopping at the first one.
 func TestParseReportsAllViolations(t *testing.T) {
-	doc := `apiVersion: recipe.tobby.dev/v1alpha1
+	doc := `apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Recipe
 metadata:
   name: Demo
@@ -136,7 +136,7 @@ spec:
 // TestParseNonStringMappingKey: documents must be representable as JSON
 // (§5), so non-string mapping keys are rejected one way or another.
 func TestParseNonStringMappingKey(t *testing.T) {
-	doc := "apiVersion: recipe.tobby.dev/v1alpha1\nkind: Recipe\nmetadata:\n  1: x\n"
+	doc := "apiVersion: recipe.tobbyfetch.dev/v1alpha1\nkind: Recipe\nmetadata:\n  1: x\n"
 	if _, err := Parse([]byte(doc)); err == nil {
 		t.Fatal("Parse accepted a document with a non-string mapping key")
 	}
@@ -185,7 +185,7 @@ func TestParseAcceptsInputAtTheBound(t *testing.T) {
 // timestamp reads as the RFC 3339 string it denotes, and a recipe carries
 // its own threshold as the reserved annotation of §6.1.
 func TestParseScanPolicy(t *testing.T) {
-	r, err := ParseRetriever([]byte(`apiVersion: recipe.tobby.dev/v1alpha1
+	r, err := ParseRetriever([]byte(`apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Retriever
 metadata:
   name: restricted-zone
@@ -214,7 +214,7 @@ spec:
 		t.Errorf("exceptions = %+v", p.Exceptions)
 	}
 
-	none, err := ParseRetriever([]byte(`apiVersion: recipe.tobby.dev/v1alpha1
+	none, err := ParseRetriever([]byte(`apiVersion: recipe.tobbyfetch.dev/v1alpha1
 kind: Retriever
 metadata:
   name: restricted-zone
@@ -232,7 +232,7 @@ spec:
 	}
 
 	rec, err := ParseRecipe([]byte(strings.Replace(minimalRecipe, "  version: 1.0.0\n",
-		"  version: 1.0.0\n  annotations:\n    recipe.tobby.dev/scan-threshold: \"6.5\"\n", 1)))
+		"  version: 1.0.0\n  annotations:\n    recipe.tobbyfetch.dev/scan-threshold: \"6.5\"\n", 1)))
 	if err != nil {
 		t.Fatalf("ParseRecipe with a scan threshold: %v", err)
 	}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tobby.dev/schemas/v1alpha1/retriever.schema.json",
+  "$id": "https://tobbyfetch.dev/schemas/v1alpha1/retriever.schema.json",
   "title": "Retriever",
   "description": "The desired recipe set for one network zone: which recipes, at which versions (exact or constraint), from which cookbook. Consumed by transfer tools in passthrough mode (periodic re-resolution) or mirror mode (per-synchronization resolution). See RECIPE-SPEC.md for normative semantics.",
   "type": "object",
@@ -8,8 +8,8 @@
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "properties": {
     "apiVersion": {
-      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobby.dev/v1alpha1'.",
-      "const": "recipe.tobby.dev/v1alpha1"
+      "description": "Schema version of this document. The only value accepted by this schema revision is 'recipe.tobbyfetch.dev/v1alpha1'.",
+      "const": "recipe.tobbyfetch.dev/v1alpha1"
     },
     "kind": {
       "description": "Document kind. Always 'Retriever' for this schema.",
@@ -46,7 +46,7 @@
           }
         },
         "annotations": {
-          "description": "Non-identifying metadata. Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobby.dev/' are reserved by the specification. Values are at most 4096 characters.",
+          "description": "Non-identifying metadata. Keys should be namespaced with a DNS prefix. Keys under 'recipe.tobbyfetch.dev/' are reserved by the specification. Values are at most 4096 characters.",
           "type": "object",
           "additionalProperties": {
             "type": "string",
@@ -87,7 +87,7 @@
       "additionalProperties": false,
       "properties": {
         "threshold": {
-          "description": "CVSS base score from which a finding violates the policy, inclusive: 7.0 refuses every finding scoring 7.0 or more. Overrides the tool's instance-level threshold, in either direction; a recipe may only lower the effective value (§6.1, recipe.tobby.dev/scan-threshold).",
+          "description": "CVSS base score from which a finding violates the policy, inclusive: 7.0 refuses every finding scoring 7.0 or more. Overrides the tool's instance-level threshold, in either direction; a recipe may only lower the effective value (§6.1, recipe.tobbyfetch.dev/scan-threshold).",
           "type": "number",
           "minimum": 0,
           "maximum": 10

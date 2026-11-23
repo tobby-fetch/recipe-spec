@@ -9,6 +9,20 @@ module follows Go's module versioning conventions.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: the API group is `recipe.tobbyfetch.dev`, no longer
+  `recipe.tobby.dev`.** The project owns `tobbyfetch.dev` and does not own
+  `tobby.dev`, and an identifier should not sit under a domain its authors
+  cannot answer for. Every identifier derived from the old domain moves
+  with it: the `apiVersion` (`recipe.tobbyfetch.dev/v1alpha1`), the reserved
+  annotations (`recipe.tobbyfetch.dev/…`) and the `$id` of the published
+  schemas (`https://tobbyfetch.dev/schemas/…`). The version
+  stays `v1alpha1` and nothing else in the format changes. There is no
+  compatibility window: a document that still says `recipe.tobby.dev` is
+  rejected, and the fix is a search-and-replace. The entries below were
+  written before the rename and name the identifiers as they were then.
+
 ### Added
 
 - **`§10.4`: a Retriever may state its zone's vulnerability-scan policy.**

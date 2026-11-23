@@ -17,9 +17,9 @@ import _ "embed"
 // Canonical identifiers ($id) of the embedded schemas.
 const (
 	// RecipeSchemaID is the $id of the Recipe JSON Schema.
-	RecipeSchemaID = "https://tobby.dev/schemas/v1alpha1/recipe.schema.json"
+	RecipeSchemaID = "https://tobbyfetch.dev/schemas/v1alpha1/recipe.schema.json"
 	// RetrieverSchemaID is the $id of the Retriever JSON Schema.
-	RetrieverSchemaID = "https://tobby.dev/schemas/v1alpha1/retriever.schema.json"
+	RetrieverSchemaID = "https://tobbyfetch.dev/schemas/v1alpha1/retriever.schema.json"
 )
 
 // RecipeSchemaJSON is the raw JSON Schema for documents of kind Recipe

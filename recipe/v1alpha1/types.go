@@ -4,8 +4,8 @@
 package v1alpha1
 
 // APIVersion is the only apiVersion accepted by this package:
-// the recipe.tobby.dev API group at version v1alpha1.
-const APIVersion = "recipe.tobby.dev/v1alpha1"
+// the recipe.tobbyfetch.dev API group at version v1alpha1.
+const APIVersion = "recipe.tobbyfetch.dev/v1alpha1"
 
 // Document kinds defined by the specification (RECIPE-SPEC.md §5).
 const (
@@ -46,7 +46,7 @@ type Object interface {
 // (RECIPE-SPEC.md §6).
 type Recipe struct {
 	// APIVersion declares the schema version of the document. It must be
-	// "recipe.tobby.dev/v1alpha1" (§4).
+	// "recipe.tobbyfetch.dev/v1alpha1" (§4).
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 	// Kind is always "Recipe" for this type (§5).
 	Kind string `json:"kind" yaml:"kind"`
@@ -63,7 +63,7 @@ func (r *Recipe) ObjectKind() string { return KindRecipe }
 // (RECIPE-SPEC.md §10).
 type Retriever struct {
 	// APIVersion declares the schema version of the document. It must be
-	// "recipe.tobby.dev/v1alpha1" (§4).
+	// "recipe.tobbyfetch.dev/v1alpha1" (§4).
 	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
 	// Kind is always "Retriever" for this type (§5).
 	Kind string `json:"kind" yaml:"kind"`
@@ -99,7 +99,7 @@ type Metadata struct {
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	// Annotations are non-identifying metadata (provenance URLs,
 	// timestamps, tooling data). Keys should be namespaced with a DNS
-	// prefix; keys under "recipe.tobby.dev/" are reserved by the
+	// prefix; keys under "recipe.tobbyfetch.dev/" are reserved by the
 	// specification.
 	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
@@ -109,18 +109,18 @@ type Metadata struct {
 const (
 	// AnnotationCookedAt is the RFC 3339 timestamp at which the recipe was
 	// cooked.
-	AnnotationCookedAt = "recipe.tobby.dev/cooked-at"
+	AnnotationCookedAt = "recipe.tobbyfetch.dev/cooked-at"
 	// AnnotationUpstreamDigestPrefix, suffixed with an ingredient name,
 	// records the digest of the upstream artifact when the pinned artifact
 	// was rewritten by tooling (e.g. Helm chart dependency vendoring §7.2).
-	AnnotationUpstreamDigestPrefix = "recipe.tobby.dev/upstream-digest."
+	AnnotationUpstreamDigestPrefix = "recipe.tobbyfetch.dev/upstream-digest."
 	// AnnotationScanThreshold carries a vulnerability-scan threshold on a
 	// recipe (§6.1, §10.4): a CVSS base score from 0 to 10 written as a
 	// decimal string. It is a setting, not a selection criterion, and it
 	// can only HARDEN the policy of the zone the recipe enters — a
 	// consumer applies it only when it is lower than the threshold already
 	// in effect, so a third-party recipe author cannot relax a zone.
-	AnnotationScanThreshold = "recipe.tobby.dev/scan-threshold"
+	AnnotationScanThreshold = "recipe.tobbyfetch.dev/scan-threshold"
 )
 
 // RecipeSpec is the content of a Recipe (RECIPE-SPEC.md §6.2).
